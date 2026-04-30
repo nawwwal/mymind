@@ -1,6 +1,6 @@
 {
   "name": "@nawwal/mymind",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Unofficial CLI and MCP bridge for the mymind API (agents-first).",
   "type": "module",
   "packageManager": "npm@11.12.1",

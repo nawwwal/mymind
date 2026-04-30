@@ -18,7 +18,7 @@ describe("loadConfig", () => {
       kid: "kid",
       secret: "secret",
       apiBaseUrl: "https://api.mymind.com",
-      userAgent: "@nawwal/mymind/1.0.0",
+      userAgent: "@nawwal/mymind/1.0.1",
       allowedFileRoots: ["/tmp", "/Users/example"],
       outputDir: "/tmp/out"
     });
