@@ -1,11 +1,11 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { MyMindClient } from "../mymind/index.js";
+import type { MyMindClientInterface } from "../mymind/client-interface.js";
 import type { SpaceCreateInput, SpaceUpdateInput } from "../mymind/client.js";
 import { requireLiteralConfirm } from "./confirm.js";
 import { dryRunResult, jsonResult } from "./mcp-result.js";
 
 export async function mymindCreateSpaceAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: SpaceCreateInput & {
     dryRun?: boolean | undefined;
     confirmWrite?: true | undefined;
@@ -19,16 +19,16 @@ export async function mymindCreateSpaceAction(
   return jsonResult(await client.createSpace(rest));
 }
 
-export async function mymindGetSpaceAction(client: MyMindClient, id: string): Promise<CallToolResult> {
+export async function mymindGetSpaceAction(client: MyMindClientInterface, id: string): Promise<CallToolResult> {
   return jsonResult(await client.getSpace(id));
 }
 
-export async function mymindListSpacesAction(client: MyMindClient): Promise<CallToolResult> {
+export async function mymindListSpacesAction(client: MyMindClientInterface): Promise<CallToolResult> {
   return jsonResult(await client.listSpaces());
 }
 
 export async function mymindUpdateSpaceAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     id: string;
     name?: string | undefined;
@@ -46,7 +46,7 @@ export async function mymindUpdateSpaceAction(
 }
 
 export async function mymindDeleteSpaceAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { id: string; dryRun?: boolean | undefined; confirmDelete?: true | undefined }
 ): Promise<CallToolResult> {
   const { id, confirmDelete, dryRun } = input;
@@ -58,7 +58,7 @@ export async function mymindDeleteSpaceAction(
 }
 
 export async function mymindAddObjectToSpaceAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     spaceId: string;
     objectId: string;
@@ -75,7 +75,7 @@ export async function mymindAddObjectToSpaceAction(
 }
 
 export async function mymindRemoveObjectFromSpaceAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     spaceId: string;
     objectId: string;

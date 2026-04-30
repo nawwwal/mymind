@@ -25,6 +25,7 @@ export interface MyMindClientOptions {
   apiBaseUrl?: string;
   userAgent?: string;
   fetch?: typeof fetch;
+  defaultRetryMax?: number | undefined;
 }
 
 export interface MyMindRateLimitMetadata {
@@ -33,10 +34,12 @@ export interface MyMindRateLimitMetadata {
   remaining?: number | undefined;
   reset?: number | undefined;
   cost?: number | undefined;
+  retryAfterSeconds?: number | undefined;
   raw: {
     rateLimitPolicy?: string | undefined;
     rateLimit?: string | undefined;
     rateLimitCost?: string | undefined;
+    retryAfter?: string | undefined;
   };
 }
 
@@ -78,6 +81,7 @@ export class MyMindApiError extends Error {
   readonly problem?: MyMindProblemDetails;
   readonly rateLimit: MyMindRateLimitMetadata;
   readonly headers: Headers;
+  readonly retryAfterSeconds?: number | undefined;
 
   constructor(options: {
     message: string;
@@ -85,6 +89,7 @@ export class MyMindApiError extends Error {
     problem?: MyMindProblemDetails;
     rateLimit: MyMindRateLimitMetadata;
     headers: Headers;
+    retryAfterSeconds?: number | undefined;
   }) {
     super(options.message);
     this.name = "MyMindApiError";
@@ -94,6 +99,7 @@ export class MyMindApiError extends Error {
     }
     this.rateLimit = options.rateLimit;
     this.headers = options.headers;
+    this.retryAfterSeconds = options.retryAfterSeconds;
   }
 }
 
@@ -110,6 +116,8 @@ export interface MyMindRequestOptions {
   headers?: HeadersInit;
   accept?: string;
   schema?: z.ZodTypeAny;
+  signal?: AbortSignal | undefined;
+  retryMax?: number | undefined;
 }
 
 export interface ListOptions extends QueryParams {
@@ -214,6 +222,7 @@ export class MyMindClient {
   private readonly apiBaseUrl: URL;
   private readonly userAgent: string;
   private readonly fetchImpl: typeof fetch;
+  private readonly defaultRetryMax: number;
 
   readonly objects: MyMindObjectsNamespace;
   readonly spaces: MyMindSpacesNamespace;
@@ -233,6 +242,7 @@ export class MyMindClient {
     this.apiBaseUrl = new URL(options.apiBaseUrl ?? DEFAULT_API_BASE_URL);
     this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
     this.fetchImpl = options.fetch ?? fetch;
+    this.defaultRetryMax = options.defaultRetryMax ?? 3;
 
     this.objects = {
       list: (opts) => this.listObjects(opts),
@@ -303,22 +313,32 @@ export class MyMindClient {
       headers,
       redirect: "follow"
     };
+    if (options.signal !== undefined) {
+      init.signal = options.signal;
+    }
     if (body !== undefined) {
       init.body = body;
     }
 
-    const response = await this.fetchImpl(url, init);
+    const retryMax = options.retryMax ?? this.defaultRetryMax;
+    for (let attempt = 0; ; attempt++) {
+      const response = await this.fetchImpl(url, init);
+      const rateLimit = parseRateLimitMetadata(response.headers);
 
-    const rateLimit = parseRateLimitMetadata(response.headers);
+      if (response.ok) {
+        return {
+          response,
+          rateLimit
+        };
+      }
 
-    if (!response.ok) {
+      if (attempt < retryMax && shouldRetry(method, response.status)) {
+        await sleep(retryDelayMs(attempt, rateLimit.retryAfterSeconds), options.signal);
+        continue;
+      }
+
       throw await toApiError(response, rateLimit);
     }
-
-    return {
-      response,
-      rateLimit
-    };
   }
 
   async listObjects(options?: ListOptions): Promise<MyMindResponse<MymindObject[] | unknown>> {
@@ -585,6 +605,14 @@ export class MyMindClient {
     });
   }
 
+  async whoami(): Promise<MyMindResponse<unknown>> {
+    return this.request({
+      path: "/objects",
+      query: { limit: 1 },
+      schema: AnyResultSchema
+    });
+  }
+
   signRequest(method: string, path: string): string {
     const encodedHeader = base64UrlJson({ alg: "HS256", kid: this.kid });
     const encodedPayload = base64UrlJson({ method: method.toUpperCase(), path });
@@ -686,7 +714,8 @@ async function toApiError(
     message: fallbackMessage,
     status: response.status,
     rateLimit,
-    headers: response.headers
+    headers: response.headers,
+    retryAfterSeconds: rateLimit.retryAfterSeconds
   };
   if (problem !== undefined) {
     errorOptions.problem = problem;
@@ -717,6 +746,7 @@ export function parseRateLimitMetadata(headers: Headers): MyMindRateLimitMetadat
   const rateLimitPolicy = headers.get("RateLimit-Policy") ?? undefined;
   const rateLimit = headers.get("RateLimit") ?? undefined;
   const rateLimitCost = headers.get("RateLimit-Cost") ?? undefined;
+  const retryAfter = headers.get("Retry-After") ?? undefined;
   const parsedRateLimit = parseRateLimitHeader(rateLimit);
   const metadata: MyMindRateLimitMetadata = { raw: {} };
 
@@ -730,6 +760,10 @@ export function parseRateLimitMetadata(headers: Headers): MyMindRateLimitMetadat
   if (rateLimitCost !== undefined) {
     metadata.raw.rateLimitCost = rateLimitCost;
   }
+  if (retryAfter !== undefined) {
+    metadata.raw.retryAfter = retryAfter;
+    metadata.retryAfterSeconds = parseRetryAfterSeconds(retryAfter);
+  }
   if (parsedRateLimit.limit !== undefined) metadata.limit = parsedRateLimit.limit;
   if (metadata.limit === undefined && metadata.policy?.[0]?.limit !== undefined) {
     metadata.limit = metadata.policy[0].limit;
@@ -740,6 +774,40 @@ export function parseRateLimitMetadata(headers: Headers): MyMindRateLimitMetadat
   if (cost !== undefined) metadata.cost = cost;
 
   return metadata;
+}
+
+function shouldRetry(method: string, status: number): boolean {
+  if (status === 429) return true;
+  if (status < 500) return false;
+  return ["GET", "HEAD", "OPTIONS", "DELETE", "PUT"].includes(method);
+}
+
+function retryDelayMs(attempt: number, retryAfterSeconds: number | undefined): number {
+  if (retryAfterSeconds !== undefined) return Math.max(0, retryAfterSeconds * 1000);
+  return Math.min(8000, 250 * 2 ** attempt);
+}
+
+function parseRetryAfterSeconds(value: string): number | undefined {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return Math.max(0, numeric);
+  const dateMs = Date.parse(value);
+  if (Number.isFinite(dateMs)) return Math.max(0, Math.ceil((dateMs - Date.now()) / 1000));
+  return undefined;
+}
+
+function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    if (signal) {
+      const abort = () => {
+        clearTimeout(timer);
+        reject(signal.reason instanceof Error ? signal.reason : new Error("Aborted."));
+      };
+      if (signal.aborted) abort();
+      else signal.addEventListener("abort", abort, { once: true });
+    }
+  });
 }
 
 function parseRateLimitPolicy(value: string): RateLimitPolicyEntry[] {

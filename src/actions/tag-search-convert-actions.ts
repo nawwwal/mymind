@@ -1,18 +1,18 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { MyMindClient } from "../mymind/index.js";
+import type { MyMindClientInterface } from "../mymind/client-interface.js";
 import type { SearchInput } from "../mymind/client.js";
 import { requireHighCostSearchConfirm } from "./confirm.js";
 import { dryRunResult, jsonResult } from "./mcp-result.js";
 
 export async function mymindListTagsAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { limit?: number | undefined }
 ): Promise<CallToolResult> {
   return jsonResult(await client.listTags({ limit: input.limit }));
 }
 
 export async function mymindSearchObjectsAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: SearchInput & {
     q: string;
     dryRun?: boolean | undefined;
@@ -28,7 +28,7 @@ export async function mymindSearchObjectsAction(
 }
 
 export async function mymindConvertContentAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     content: string | Record<string, unknown>;
     from: "text/plain" | "text/markdown" | "application/prose+json";

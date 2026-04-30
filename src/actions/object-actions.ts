@@ -1,21 +1,21 @@
 import { stat, writeFile } from "node:fs/promises";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { MymindMcpConfig } from "../config.js";
-import type { MyMindClient } from "../mymind/index.js";
+import type { MyMindClientInterface } from "../mymind/client-interface.js";
 import type { ObjectCreateInput, ObjectUpdateInput } from "../mymind/client.js";
 import { requireLiteralConfirm } from "./confirm.js";
 import { dryRunResult, jsonContent, jsonResult, summarizeContent } from "./mcp-result.js";
 import { assertAllowedPath, assertOutputPath } from "./paths.js";
 
 export async function mymindListObjectsAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { id?: string[] | undefined; limit?: number | undefined }
 ): Promise<CallToolResult> {
   return jsonResult(await client.listObjects({ id: input.id, limit: input.limit }));
 }
 
 export async function mymindCreateObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   config: MymindMcpConfig,
   input: ObjectCreateInput & {
     filePath?: string | undefined;
@@ -56,12 +56,12 @@ export async function mymindCreateObjectAction(
   return jsonResult(await client.createObject(rest));
 }
 
-export async function mymindGetObjectAction(client: MyMindClient, id: string): Promise<CallToolResult> {
+export async function mymindGetObjectAction(client: MyMindClientInterface, id: string): Promise<CallToolResult> {
   return jsonResult(await client.getObject(id));
 }
 
 export async function mymindFindRelatedObjectsAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { id: string; limit?: number | undefined; confirmHighCost: true }
 ): Promise<CallToolResult> {
   requireLiteralConfirm(
@@ -72,7 +72,7 @@ export async function mymindFindRelatedObjectsAction(
 }
 
 export async function mymindDownloadObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   config: MymindMcpConfig,
   input: {
     id: string;
@@ -127,7 +127,7 @@ export async function mymindDownloadObjectAction(
 }
 
 export async function mymindGetObjectContentAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   id: string,
   format: "text/markdown" | "application/prose+json" | "text/html"
 ): Promise<CallToolResult> {
@@ -135,7 +135,7 @@ export async function mymindGetObjectContentAction(
 }
 
 export async function mymindUpdateObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     id: string;
     title?: string | undefined;
@@ -152,7 +152,7 @@ export async function mymindUpdateObjectAction(
 }
 
 export async function mymindReplaceNoteContentAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     id: string;
     content: string | Record<string, unknown>;
@@ -174,7 +174,7 @@ export async function mymindReplaceNoteContentAction(
 }
 
 export async function mymindAddObjectTagsAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     objectId: string;
     tags: Array<{ name: string; flags?: number | undefined }>;
@@ -191,7 +191,7 @@ export async function mymindAddObjectTagsAction(
 }
 
 export async function mymindAddObjectSpacesAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     objectId: string;
     spaces: Array<{ id: string }>;
@@ -208,7 +208,7 @@ export async function mymindAddObjectSpacesAction(
 }
 
 export async function mymindPinObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: {
     id: string;
     position?: number | undefined;
@@ -225,7 +225,7 @@ export async function mymindPinObjectAction(
 }
 
 export async function mymindUnpinObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { id: string; dryRun?: boolean | undefined; confirmWrite?: true | undefined }
 ): Promise<CallToolResult> {
   const { id, confirmWrite, dryRun } = input;
@@ -237,7 +237,7 @@ export async function mymindUnpinObjectAction(
 }
 
 export async function mymindDeleteObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { id: string; dryRun?: boolean | undefined; confirmDelete?: true | undefined }
 ): Promise<CallToolResult> {
   const { id, confirmDelete, dryRun } = input;
@@ -249,7 +249,7 @@ export async function mymindDeleteObjectAction(
 }
 
 export async function mymindRestoreObjectAction(
-  client: MyMindClient,
+  client: MyMindClientInterface,
   input: { id: string; dryRun?: boolean | undefined; confirmWrite?: true | undefined }
 ): Promise<CallToolResult> {
   const { id, confirmWrite, dryRun } = input;
