@@ -1,3 +1,5 @@
+import { tryLoadCredentialsFromFile } from "./auth/credentials-file.js";
+
 export interface MymindMcpConfig {
   kid: string;
   secret: string;
@@ -7,13 +9,21 @@ export interface MymindMcpConfig {
   outputDir?: string | undefined;
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): MymindMcpConfig {
-  const kid = env.MYMIND_KID;
-  const secret = env.MYMIND_SECRET;
+export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<MymindMcpConfig> {
+  let kid = env.MYMIND_KID;
+  let secret = env.MYMIND_SECRET;
+
+  if (!kid || !secret) {
+    const fromFile = await tryLoadCredentialsFromFile(env);
+    if (fromFile) {
+      kid = fromFile.kid;
+      secret = fromFile.secret;
+    }
+  }
 
   if (!kid || !secret) {
     throw new Error(
-      "Missing MyMind credentials. Set MYMIND_KID and MYMIND_SECRET from https://access.mymind.com/extensions."
+      "Missing MyMind credentials. Set MYMIND_KID and MYMIND_SECRET, run `mymind login`, or see https://access.mymind.com/extensions."
     );
   }
 
@@ -21,7 +31,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): MymindMcpConfi
     kid,
     secret,
     apiBaseUrl: env.MYMIND_API_BASE ?? "https://api.mymind.com",
-    userAgent: env.MYMIND_USER_AGENT ?? "@nawwal/mymind-mcp/0.1.0",
+    userAgent: env.MYMIND_USER_AGENT ?? "@nawwal/mymind/1.0.0",
     allowedFileRoots: splitPathList(env.MYMIND_ALLOWED_FILE_ROOTS),
     outputDir: env.MYMIND_OUTPUT_DIR
   };
