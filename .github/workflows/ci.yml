@@ -64,7 +64,7 @@ jobs:
         run: npm run output-schemas && npm run cli-reference && git diff --exit-code docs/output-schemas docs/examples docs/cli-reference.md
 
       - name: Repository guards
-        run: npm run lint:renames && npm run lint:api-feedback
+        run: npm run lint:api-feedback
 
       - name: Check package contents
         run: npm run pack:check --if-present

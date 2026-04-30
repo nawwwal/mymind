@@ -43,9 +43,8 @@
     "schemas": "tsx scripts/build-json-schemas.ts",
     "output-schemas": "tsx scripts/build-output-schemas.ts",
     "cli-reference": "tsx scripts/build-cli-reference.ts",
-    "lint:renames": "node scripts/lint-renames.mjs",
     "lint:api-feedback": "node scripts/lint-api-feedback.mjs",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run manifest && npm run schemas && npm run output-schemas && npm run cli-reference && git diff --exit-code docs/manifest.json docs/schemas docs/output-schemas docs/examples docs/cli-reference.md && npm run lint:renames && npm run lint:api-feedback && npm run pack:check",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run manifest && npm run schemas && npm run output-schemas && npm run cli-reference && git diff --exit-code docs/manifest.json docs/schemas docs/output-schemas docs/examples docs/cli-reference.md && npm run lint:api-feedback && npm run pack:check",
     "prepublishOnly": "npm run verify"
   },
   "keywords": [

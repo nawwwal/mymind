@@ -4,7 +4,7 @@ Unofficial **CLI + MCP** bridge for the mymind API: use `mymind` from any termin
 
 The package is intended to run through `npx` without a global install. Credentials resolve from environment variables, `mymind login` (default: `~/.config/mymind/credentials.json`), and on macOS optionally `mymind login --store keychain`. It exposes the practical API surface: objects, spaces, tags, conversion, and search—not every undocumented endpoint variant.
 
-Repository: `github.com/nawwwal/mymind` (may stay private while the npm package is public).
+Repository: `github.com/nawwwal/mymind`.
 
 ## Installation
 
@@ -176,7 +176,7 @@ Reference-only API documentation:
 - `markdown-support`
 - `prose`
 
-See [docs/coverage.md](docs/coverage.md) for the complete coverage table and [docs/migration.md](docs/migration.md) if you are moving off the old package name.
+See [docs/coverage.md](docs/coverage.md) for the complete coverage table.
 
 ## Safety Notes
 

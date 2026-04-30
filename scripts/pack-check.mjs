@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const cacheDir = mkdtempSync(join(tmpdir(), "mymind-mcp-npm-cache-"));
+const cacheDir = mkdtempSync(join(tmpdir(), "mymind-npm-cache-"));
 
 try {
   const result = spawnSync("npm", ["--cache", cacheDir, "pack", "--dry-run"], {

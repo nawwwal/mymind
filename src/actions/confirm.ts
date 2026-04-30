@@ -1,4 +1,4 @@
-/** MCP host passes `z.literal(true)` flags; throws if missing (same semantics as legacy tools). */
+/** MCP host passes `z.literal(true)` flags; throws if missing. */
 
 export function requireLiteralConfirm(value: unknown, message: string): asserts value is true {
   if (value !== true) {

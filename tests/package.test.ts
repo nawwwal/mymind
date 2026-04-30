@@ -25,7 +25,7 @@ async function readPackageJson(): Promise<PackageJson> {
 }
 
 describe("package metadata", () => {
-  it("targets the private GitHub repository while publishing a public npm package", async () => {
+  it("targets the GitHub repository and publishes publicly", async () => {
     const packageJson = await readPackageJson();
 
     expect(packageJson.name).toBe("@nawwal/mymind");
@@ -54,7 +54,7 @@ describe("package metadata", () => {
   });
 
   it("includes docs in the npm package contents", () => {
-    const cacheDir = mkdtempSync(join(tmpdir(), "mymind-mcp-npm-cache-"));
+    const cacheDir = mkdtempSync(join(tmpdir(), "mymind-npm-cache-"));
 
     try {
       const output = execFileSync("npm", ["--cache", cacheDir, "pack", "--dry-run", "--json"], {
@@ -74,7 +74,6 @@ describe("package metadata", () => {
           "docs/client-configs.md",
           "docs/development.md",
           "docs/installation.md",
-          "docs/migration.md",
           "docs/safety.md"
         ])
       );
