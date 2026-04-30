@@ -95,20 +95,6 @@ export function registerMymindResources(server: McpServer, { client }: ResourceD
       return jsonResource(uri.href, (await client.listTags()).data);
     }
   );
-
-  server.registerResource(
-    "mymind_entity",
-    new ResourceTemplate("mymind://entities/{id}", { list: undefined }),
-    {
-      title: "MyMind entity",
-      description: "One MyMind entity. Entities are documented as WIP/Coming soon.",
-      mimeType: "application/json"
-    },
-    async (uri, variables) => {
-      assertResourceUri(uri, "entities");
-      return jsonResource(uri.href, (await client.getEntity(firstVariable(variables.id, "id"))).data);
-    }
-  );
 }
 
 function jsonResource(uri: string, data: unknown) {
