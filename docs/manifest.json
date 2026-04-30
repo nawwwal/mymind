@@ -1,0 +1,395 @@
+{
+  "v": 1,
+  "schemaVersion": 1,
+  "name": "mymind",
+  "description": "CLI and MCP bridge for the unofficial mymind API",
+  "commands": [
+    {
+      "path": [
+        "search"
+      ],
+      "summary": "Search mymind",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "ls"
+      ],
+      "summary": "List objects (shortcut)",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "get"
+      ],
+      "summary": "Get object (shortcut)",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "save"
+      ],
+      "summary": "Create object from URL",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "note"
+      ],
+      "summary": "Create note from stdin",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "capture"
+      ],
+      "summary": "Upload file",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "ls"
+      ],
+      "summary": "List objects",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "objects",
+        "get"
+      ],
+      "summary": "Get object",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "objects",
+        "create"
+      ],
+      "summary": "Create object (url, body, file)",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "update"
+      ],
+      "summary": "Update object metadata",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "rm"
+      ],
+      "summary": "Soft-delete objects",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "restore"
+      ],
+      "summary": "Restore soft-deleted objects",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "pin"
+      ],
+      "summary": "Pin objects",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "unpin"
+      ],
+      "summary": "Unpin objects",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "download"
+      ],
+      "summary": "Download object blob",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "objects",
+        "content"
+      ],
+      "summary": "Fetch object content",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "objects",
+        "replace"
+      ],
+      "summary": "Replace note content",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "related"
+      ],
+      "summary": "Related objects (high cost)",
+      "tier": "read",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "tag"
+      ],
+      "summary": "Add tags to objects",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "link-spaces"
+      ],
+      "summary": "Add objects to spaces",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "objects",
+        "thumbnail"
+      ],
+      "summary": "Fetch thumbnail",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "objects",
+        "search"
+      ],
+      "summary": "Search under objects namespace",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "spaces",
+        "ls"
+      ],
+      "summary": "List spaces",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "spaces",
+        "get"
+      ],
+      "summary": "Get space",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "spaces",
+        "create"
+      ],
+      "summary": "Create space",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "spaces",
+        "update"
+      ],
+      "summary": "Update space",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "spaces",
+        "rm"
+      ],
+      "summary": "Delete space shell",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "spaces",
+        "add"
+      ],
+      "summary": "Add object to space",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "spaces",
+        "remove"
+      ],
+      "summary": "Remove object from space",
+      "tier": "write",
+      "needsConfirmCost": true
+    },
+    {
+      "path": [
+        "tags",
+        "ls"
+      ],
+      "summary": "List tags",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "convert"
+      ],
+      "summary": "Convert content",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "login"
+      ],
+      "summary": "Save credentials (file or macOS keychain)",
+      "tier": "auth"
+    },
+    {
+      "path": [
+        "logout"
+      ],
+      "summary": "Remove saved credentials (file + keychain)",
+      "tier": "auth"
+    },
+    {
+      "path": [
+        "auth",
+        "status"
+      ],
+      "summary": "Credential layers (env / file / keychain)",
+      "tier": "auth"
+    },
+    {
+      "path": [
+        "whoami"
+      ],
+      "summary": "Show active kid / resolution source",
+      "tier": "read"
+    },
+    {
+      "path": [
+        "install"
+      ],
+      "summary": "Configure MCP clients",
+      "tier": "setup"
+    },
+    {
+      "path": [
+        "mcp"
+      ],
+      "summary": "Start MCP stdio server",
+      "tier": "setup"
+    },
+    {
+      "path": [
+        "manifest"
+      ],
+      "summary": "Print machine-readable CLI manifest",
+      "tier": "setup"
+    }
+  ],
+  "mcpTools": [
+    "mymind_list_objects",
+    "mymind_create_object",
+    "mymind_get_object",
+    "mymind_find_related_objects",
+    "mymind_download_object",
+    "mymind_get_object_content",
+    "mymind_update_object",
+    "mymind_replace_note_content",
+    "mymind_add_object_tags",
+    "mymind_add_object_spaces",
+    "mymind_pin_object",
+    "mymind_unpin_object",
+    "mymind_delete_object",
+    "mymind_restore_object",
+    "mymind_create_space",
+    "mymind_get_space",
+    "mymind_list_spaces",
+    "mymind_update_space",
+    "mymind_delete_space",
+    "mymind_add_object_to_space",
+    "mymind_remove_object_from_space",
+    "mymind_list_tags",
+    "mymind_search_objects",
+    "mymind_convert_content"
+  ],
+  "exitCodes": {
+    "OK": 0,
+    "GENERIC": 1,
+    "USAGE": 2,
+    "AUTH": 3,
+    "NOT_FOUND": 4,
+    "RATE_LIMIT": 5,
+    "CONFIRM": 6,
+    "DRY_RUN": 7,
+    "UPSTREAM": 64,
+    "SIGINT": 130,
+    "SIGPIPE": 141
+  },
+  "envVars": [
+    {
+      "name": "MYMIND_KID",
+      "summary": "Access key id"
+    },
+    {
+      "name": "MYMIND_SECRET",
+      "summary": "Access key secret (base64)"
+    },
+    {
+      "name": "MYMIND_API_BASE",
+      "summary": "API base URL (default https://api.mymind.com)"
+    },
+    {
+      "name": "MYMIND_USER_AGENT",
+      "summary": "Override User-Agent for API requests"
+    },
+    {
+      "name": "MYMIND_ALLOWED_FILE_ROOTS",
+      "summary": "Comma-separated roots allowed for uploads (MCP/CLI)"
+    },
+    {
+      "name": "MYMIND_OUTPUT_DIR",
+      "summary": "Directory for MCP download writes"
+    },
+    {
+      "name": "MYMIND_OUTPUT",
+      "summary": "CLI output shape: json | ndjson | text"
+    },
+    {
+      "name": "MYMIND_AUTO_CONFIRM",
+      "summary": "Set to \"1\" to skip interactive cost confirmations in CLI"
+    },
+    {
+      "name": "XDG_CONFIG_HOME",
+      "summary": "Overrides config dir for ~/.config/mymind/credentials.json"
+    }
+  ],
+  "version": "1.0.0"
+}

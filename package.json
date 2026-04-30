@@ -39,7 +39,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "pack:check": "node scripts/pack-check.mjs",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run pack:check",
+    "manifest": "tsx scripts/build-manifest.ts",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run manifest && git diff --exit-code docs/manifest.json && npm run pack:check",
     "prepublishOnly": "npm run verify"
   },
   "keywords": [

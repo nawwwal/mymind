@@ -48,5 +48,8 @@ jobs:
       - name: Build
         run: npm run build --if-present
 
+      - name: Manifest matches source
+        run: npm run manifest && git diff --exit-code docs/manifest.json
+
       - name: Check package contents
         run: npm run pack:check --if-present
