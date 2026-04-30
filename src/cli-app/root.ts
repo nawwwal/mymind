@@ -9,6 +9,11 @@ import {
   tryLoadCredentialsFromFile,
   writeCredentialsFile
 } from "../auth/credentials-file.js";
+import {
+  deleteCredentialsFromKeychain,
+  describeCredentialLayers,
+  writeCredentialsToKeychain
+} from "../auth/store.js";
 import { loadConfig } from "../config.js";
 import { InstallHelp, runInstallCommand } from "../install.js";
 import { runMcpStdioServer } from "../mcp-stdio.js";
@@ -31,6 +36,26 @@ function readPkgVersion(): string {
     return "1.0.0";
   }
 }
+
+const authStatusCommand = defineCommand({
+  meta: { name: "status", description: "Show credential layers (env, file, macOS keychain)" },
+  async run() {
+    try {
+      const fileCreds = await tryLoadCredentialsFromFile();
+      const { layers, effective } = describeCredentialLayers(process.env, Boolean(fileCreds));
+      printEnvelope("auth.status", { layers, effective: effective ?? null }, {});
+    } catch (error) {
+      handleCliError(error);
+    }
+  }
+});
+
+const authRootCommand = defineCommand({
+  meta: { name: "auth", description: "Credential helpers" },
+  subCommands: {
+    status: authStatusCommand
+  }
+});
 
 const manifestCommand = defineCommand({
   meta: { name: "manifest", description: "Print machine-readable CLI manifest (JSON)" },
@@ -92,18 +117,34 @@ const searchCommand = defineCommand({
 });
 
 const loginCommand = defineCommand({
-  meta: { name: "login", description: "Save MYMIND_KID and MYMIND_SECRET to ~/.config/mymind/credentials.json" },
+  meta: {
+    name: "login",
+    description: "Save credentials to ~/.config/mymind/credentials.json or macOS keychain"
+  },
   args: {
     kid: { type: "string", description: "Access key id" },
-    secret: { type: "string", description: "Access key secret (base64)" }
+    secret: { type: "string", description: "Access key secret (base64)" },
+    store: {
+      type: "string",
+      description: "file (default) or keychain (macOS)",
+      valueHint: "file|keychain"
+    }
   },
   async run({ args }) {
     try {
       const kid = args.kid ?? process.env.MYMIND_KID;
       const secret = args.secret ?? process.env.MYMIND_SECRET;
       if (!kid || !secret) throw new Error("Provide --kid and --secret or set MYMIND_KID and MYMIND_SECRET");
-      await writeCredentialsFile(kid, secret);
-      printEnvelope("login", { saved: true }, {});
+      const store = ((args.store as string | undefined) ?? "file").toLowerCase();
+      if (store !== "file" && store !== "keychain") {
+        throw new Error('Invalid --store (use file or keychain)');
+      }
+      if (store === "keychain") {
+        writeCredentialsToKeychain(kid, secret);
+      } else {
+        await writeCredentialsFile(kid, secret);
+      }
+      printEnvelope("login", { saved: true, store }, {});
     } catch (error) {
       handleCliError(error);
     }
@@ -111,10 +152,11 @@ const loginCommand = defineCommand({
 });
 
 const logoutCommand = defineCommand({
-  meta: { name: "logout", description: "Remove saved credentials file" },
+  meta: { name: "logout", description: "Remove saved credentials (file and macOS keychain entry)" },
   async run() {
     try {
       await deleteCredentialsFile();
+      deleteCredentialsFromKeychain();
       printEnvelope("logout", { removed: true }, {});
     } catch (error) {
       handleCliError(error);
@@ -126,11 +168,14 @@ const whoamiCommand = defineCommand({
   meta: { name: "whoami", description: "Show active credential kid and resolution source" },
   async run() {
     try {
-      const envKid = process.env.MYMIND_KID;
-      const config = await loadConfig();
       const fileCreds = await tryLoadCredentialsFromFile();
-      const source = envKid ? "env" : fileCreds ? "file" : "unknown";
-      printEnvelope("whoami", { kid: config.kid, source }, {});
+      const { layers, effective } = describeCredentialLayers(process.env, Boolean(fileCreds));
+      const config = await loadConfig();
+      printEnvelope(
+        "whoami",
+        { kid: config.kid, source: effective ?? "unknown", layers },
+        {}
+      );
     } catch (error) {
       handleCliError(error);
     }
@@ -277,6 +322,7 @@ export const rootCommand = defineCommand({
     manifest: manifestCommand,
     login: loginCommand,
     logout: logoutCommand,
+    auth: authRootCommand,
     whoami: whoamiCommand,
     install: installCliCommand,
     mcp: mcpCliCommand,

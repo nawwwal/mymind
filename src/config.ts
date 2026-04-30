@@ -1,4 +1,5 @@
 import { tryLoadCredentialsFromFile } from "./auth/credentials-file.js";
+import { tryLoadCredentialsFromKeychain } from "./auth/store.js";
 
 export interface MymindMcpConfig {
   kid: string;
@@ -18,6 +19,14 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     if (fromFile) {
       kid = fromFile.kid;
       secret = fromFile.secret;
+    }
+  }
+
+  if (!kid || !secret) {
+    const fromKeychain = tryLoadCredentialsFromKeychain();
+    if (fromKeychain) {
+      kid = fromKeychain.kid;
+      secret = fromKeychain.secret;
     }
   }
 
