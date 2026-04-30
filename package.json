@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Unofficial CLI and MCP bridge for the mymind API (agents-first).",
   "type": "module",
-  "packageManager": "npm@11.13.0",
+  "packageManager": "npm@11.12.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "repository": {

@@ -41,7 +41,7 @@ Optional runtime variables:
 ## CI
 
 `.github/workflows/ci.yml` runs on pushes and pull requests with Node 22 and Node 24.
-Workflows pin npm `11.13.0` because npm trusted publishing requires npm `11.5.1` or newer, and older npm 11 releases have shown local `npm ci` exit-handler bugs.
+Workflows pin npm `11.12.1` because npm trusted publishing requires npm `11.5.1` or newer, and `npm@11.13.0` ships with a broken global install (`Cannot find module 'promise-retry'`).
 
 The workflow:
 
