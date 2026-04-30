@@ -11,25 +11,11 @@ import {
   updateCursorConfig
 } from "../src/install.js";
 
-const serverConfig = createServerConfig({
-  kid: "kid_123",
-  secret: "secret_456"
-});
+const serverConfig = createServerConfig();
 
 describe("installer config helpers", () => {
   it("creates the standard installed-binary server config", () => {
     expect(serverConfig).toEqual({
-      command: "mymind",
-      args: ["mcp"],
-      env: {
-        MYMIND_KID: "kid_123",
-        MYMIND_SECRET: "secret_456"
-      }
-    });
-  });
-
-  it("creates bin-only config without embedded secrets", () => {
-    expect(createServerConfig(null, "@nawwal/mymind", true)).toEqual({
       command: "mymind",
       args: ["mcp"],
       env: {}
@@ -42,7 +28,6 @@ describe("installer config helpers", () => {
       dryRun: false,
       yes: false,
       noInput: false,
-      useBinOnly: false,
       scope: "user"
     });
 
@@ -53,9 +38,8 @@ describe("installer config helpers", () => {
       scope: "project"
     });
 
-    expect(parseArgs(["--no-input", "--use-bin-only"])).toMatchObject({
-      noInput: true,
-      useBinOnly: true
+    expect(parseArgs(["--no-input"])).toMatchObject({
+      noInput: true
     });
   });
 
@@ -138,7 +122,6 @@ describe("installer config helpers", () => {
     expect(config).toContain("[mcp_servers.mymind]");
     expect(config).toContain('command = "mymind"');
     expect(config).toContain('args = ["mcp"]');
-    expect(config).toContain('MYMIND_KID = "kid_123"');
-    expect(config).toContain('MYMIND_SECRET = "secret_456"');
+    expect(config).toContain('env = {}');
   });
 });

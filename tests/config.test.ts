@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -7,9 +7,13 @@ import { DEFAULT_JWT_VALIDITY_SECONDS, jwtValiditySecondsFromEnv, loadConfig } f
 describe("loadConfig", () => {
   it("requires MyMind credentials", async () => {
     const configHome = await mkdtemp(join(tmpdir(), "mymind-empty-config-"));
-    await expect(loadConfig({ XDG_CONFIG_HOME: configHome, MYMIND_DISABLE_KEYCHAIN: "1" })).rejects.toThrow(
-      /Missing MyMind credentials/
-    );
+    try {
+      await expect(loadConfig({ XDG_CONFIG_HOME: configHome, MYMIND_DISABLE_KEYCHAIN: "1" })).rejects.toThrow(
+        /Missing MyMind credentials/
+      );
+    } finally {
+      await rm(configHome, { recursive: true, force: true });
+    }
   });
 
   it("loads defaults and optional path settings", async () => {
