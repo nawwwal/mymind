@@ -51,5 +51,14 @@ jobs:
       - name: Manifest matches source
         run: npm run manifest && git diff --exit-code docs/manifest.json
 
+      - name: JSON Schemas match source
+        run: npm run schemas && git diff --exit-code docs/schemas
+
+      - name: Output schemas and CLI reference match source
+        run: npm run output-schemas && npm run cli-reference && git diff --exit-code docs/output-schemas docs/examples docs/cli-reference.md
+
+      - name: Repository guards
+        run: npm run lint:renames && npm run lint:api-feedback
+
       - name: Check package contents
         run: npm run pack:check --if-present
