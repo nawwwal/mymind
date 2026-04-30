@@ -4,7 +4,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineCommand, runMain } from "citty";
 import { assertAllowedPath } from "../actions/paths.js";
-import type { ListOptions } from "../mymind/client.js";
 import {
   deleteCredentialsFile,
   tryLoadCredentialsFromFile,
@@ -13,11 +12,15 @@ import {
 import { loadConfig } from "../config.js";
 import { InstallHelp, runInstallCommand } from "../install.js";
 import { runMcpStdioServer } from "../mcp-stdio.js";
+import { objectsRootCommand, objectsGetCommand, runObjectsListShortcut } from "./commands/objects.js";
+import { spacesRootCommand } from "./commands/spaces.js";
+import { tagsRootCommand } from "./commands/tags.js";
 import { CLI_MANIFEST } from "./manifest-data.js";
 import { handleCliError, printEnvelope, requireConfirm, Exit } from "./io.js";
+import { parseOptionalLimit } from "./limits.js";
+import { SEARCH_SYNTAX_REFERENCE } from "./search-syntax.js";
 import { withClient } from "./run-client.js";
-import { readStdinAll, readStdinLines } from "./stdin.js";
-import { filterObjectsBySince, parseSinceCutoffMs } from "./since.js";
+import { readStdinAll } from "./stdin.js";
 
 function readPkgVersion(): string {
   try {
@@ -27,32 +30,6 @@ function readPkgVersion(): string {
   } catch {
     return "1.0.0";
   }
-}
-
-function parseOptionalLimit(raw: string | undefined): number | undefined {
-  if (raw === undefined || raw === "") return undefined;
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n < 0) throw new Error("Invalid --limit (expect a non-negative number)");
-  return n;
-}
-
-async function runObjectsList(flags: { limit?: string | undefined; since?: string | undefined }): Promise<void> {
-  await withClient(async (client) => {
-    const query: ListOptions = {};
-    const limit = parseOptionalLimit(flags.limit);
-    if (limit !== undefined) query.limit = limit;
-    const result = await client.listObjects(query);
-    let data = result.data;
-    const warnings: string[] = [];
-    if (flags.since) {
-      const ms = parseSinceCutoffMs(flags.since);
-      if (ms === null) throw new Error("Invalid --since (use e.g. 7d, 12h, 2w, 3mo)");
-      const out = filterObjectsBySince(data, ms);
-      data = out.filtered;
-      if (out.dropped > 0) warnings.push(`Filtered ${out.dropped} objects older than --since`);
-    }
-    printEnvelope("objects.ls", data, result.rateLimit, warnings);
-  });
 }
 
 const manifestCommand = defineCommand({
@@ -75,6 +52,7 @@ const manifestCommand = defineCommand({
 const searchCommand = defineCommand({
   meta: { name: "search", description: "Search mymind (GET /search)" },
   args: {
+    syntax: { type: "boolean", description: "Print search DSL reference" },
     q: { type: "positional", description: "Query string", required: false },
     limit: { type: "string", description: "Max results (default 20)", valueHint: "n" },
     semantic: { type: "boolean", description: "Semantic search" },
@@ -84,9 +62,13 @@ const searchCommand = defineCommand({
   },
   async run({ args }) {
     try {
+      if (args.syntax === true) {
+        process.stdout.write(`${SEARCH_SYNTAX_REFERENCE}\n`);
+        return;
+      }
       const q = args.q as string | undefined;
       const similarTo = args.similarTo as string | undefined;
-      if (!q && !similarTo) throw new Error("Provide a query argument or --similar-to <uid>");
+      if (!q && !similarTo) throw new Error("Provide a query argument, --similar-to <uid>, or --syntax");
       if (args.semantic || args.rerank) {
         requireConfirm(
           args.yesCost,
@@ -179,90 +161,6 @@ const mcpCliCommand = defineCommand({
     } catch (error) {
       handleCliError(error);
     }
-  }
-});
-
-const objectsLsCommand = defineCommand({
-  meta: { name: "ls", description: "List objects" },
-  args: {
-    limit: { type: "string", description: "Max objects", valueHint: "n" },
-    since: { type: "string", description: "Filter by created age (e.g. 7d)" }
-  },
-  async run({ args }) {
-    try {
-      await runObjectsList({ limit: args.limit, since: args.since });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
-const objectsGetCommand = defineCommand({
-  meta: { name: "get", description: "Get object by id" },
-  args: {
-    id: { type: "positional", description: "Object uid", required: false }
-  },
-  async run({ args }) {
-    try {
-      const fromArg = args.id as string | undefined;
-      const stdinIds = await readStdinLines();
-      const ids = fromArg ? [fromArg, ...stdinIds] : stdinIds;
-      if (ids.length === 0) throw new Error("Provide <id> or pipe ids on stdin");
-      await withClient(async (client) => {
-        for (const id of ids) {
-          const result = await client.getObject(id);
-          printEnvelope("objects.get", result.data, result.rateLimit);
-        }
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
-const tagsLsCommand = defineCommand({
-  meta: { name: "ls", description: "List tags" },
-  args: {
-    limit: { type: "string", description: "Max tags", valueHint: "n" }
-  },
-  async run({ args }) {
-    try {
-      await withClient(async (client) => {
-        const limit = parseOptionalLimit(args.limit);
-        const result = await client.listTags(limit !== undefined ? { limit } : {});
-        printEnvelope("tags.ls", result.data, result.rateLimit);
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
-const tagsRootCommand = defineCommand({
-  meta: { name: "tags", description: "Tag operations" },
-  subCommands: {
-    ls: tagsLsCommand
-  }
-});
-
-const spacesLsCommand = defineCommand({
-  meta: { name: "ls", description: "List spaces" },
-  async run() {
-    try {
-      await withClient(async (client) => {
-        const result = await client.listSpaces();
-        printEnvelope("spaces.ls", result.data, result.rateLimit);
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
-const spacesRootCommand = defineCommand({
-  meta: { name: "spaces", description: "Space operations" },
-  subCommands: {
-    ls: spacesLsCommand
   }
 });
 
@@ -368,14 +266,6 @@ const captureCommand = defineCommand({
   }
 });
 
-const objectsRootCommand = defineCommand({
-  meta: { name: "objects", description: "Object operations" },
-  subCommands: {
-    ls: objectsLsCommand,
-    get: objectsGetCommand
-  }
-});
-
 export const rootCommand = defineCommand({
   meta: {
     name: "mymind",
@@ -398,7 +288,7 @@ export const rootCommand = defineCommand({
       },
       async run({ args }) {
         try {
-          await runObjectsList({ limit: args.limit, since: args.since });
+          await runObjectsListShortcut({ limit: args.limit, since: args.since });
         } catch (error) {
           handleCliError(error);
         }
