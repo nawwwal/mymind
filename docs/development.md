@@ -1,6 +1,6 @@
 # Development
 
-This project publishes the public npm package `@nawwal/mymind-mcp` from the private GitHub repository `github.com/nawwwal/mymind-mcp`.
+This project publishes the public npm package `@nawwal/mymind` from the private GitHub repository `github.com/nawwwal/mymind-mcp`.
 
 ## Local Setup
 
@@ -78,7 +78,7 @@ Because the GitHub repository is private, npm provenance attestations are not ex
 
 ## Release Checklist
 
-1. Confirm `package.json` has the package name `@nawwal/mymind-mcp`.
+1. Confirm `package.json` has the package name `@nawwal/mymind`.
 2. Confirm `package.json` `repository.url` points to `github.com/nawwwal/mymind-mcp`.
 3. Run the CI checks locally where practical.
 4. Create a GitHub Release.
@@ -86,7 +86,7 @@ Because the GitHub repository is private, npm provenance attestations are not ex
 6. Confirm the public package is visible:
 
 ```sh
-npm view @nawwal/mymind-mcp
+npm view @nawwal/mymind
 ```
 
 ## Documentation

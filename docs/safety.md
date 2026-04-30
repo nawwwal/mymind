@@ -1,6 +1,6 @@
 # Safety
 
-`@nawwal/mymind-mcp` is an unofficial integration that connects an MCP client to a real mymind account. Treat it as a local bridge to private user data.
+`@nawwal/mymind` is an unofficial integration that connects a CLI or MCP client to a real mymind account. Treat it as a local bridge to private user data.
 
 It is not endorsed by mymind, and the mymind API may change without notice. Prefer read-only tools when validating a new setup.
 

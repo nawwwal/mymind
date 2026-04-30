@@ -5,7 +5,7 @@
 Run:
 
 ```sh
-npx -y @nawwal/mymind-mcp install
+npx -y @nawwal/mymind install
 ```
 
 The installer detects supported local MCP clients and configures whichever ones it finds:
@@ -18,16 +18,16 @@ The installer detects supported local MCP clients and configures whichever ones 
 Set credentials before running, or enter them when prompted:
 
 ```sh
-MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp install
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind install
 ```
 
 Useful options:
 
 ```sh
-npx -y @nawwal/mymind-mcp install --dry-run
-npx -y @nawwal/mymind-mcp install --clients=codex
-npx -y @nawwal/mymind-mcp install --clients=claude-code,codex
-npx -y @nawwal/mymind-mcp install --clients=claude-code --scope=user
+npx -y @nawwal/mymind install --dry-run
+npx -y @nawwal/mymind install --clients=codex
+npx -y @nawwal/mymind install --clients=claude-code,codex
+npx -y @nawwal/mymind install --clients=claude-code --scope=user
 ```
 
 For non-interactive shells, set both credentials and pass `--yes`.
@@ -37,7 +37,7 @@ For non-interactive shells, set both credentials and pass `--yes`.
 All clients should run the same command:
 
 ```sh
-npx -y @nawwal/mymind-mcp
+npx -y @nawwal/mymind mcp
 ```
 
 All clients must provide the same two environment variables:
@@ -72,7 +72,7 @@ Common macOS path:
   "mcpServers": {
     "mymind": {
       "command": "npx",
-      "args": ["-y", "@nawwal/mymind-mcp"],
+      "args": ["-y", "@nawwal/mymind", "mcp"],
       "env": {
         "MYMIND_KID": "your_key_id",
         "MYMIND_SECRET": "your_secret"
@@ -95,7 +95,7 @@ claude mcp add mymind \
   --scope user \
   --env MYMIND_KID=your_key_id \
   --env MYMIND_SECRET=your_secret \
-  -- npx -y @nawwal/mymind-mcp
+  -- npx -y @nawwal/mymind mcp
 ```
 
 Restart Claude Code after adding the server, or run `claude mcp list` to confirm it was added.
@@ -107,7 +107,7 @@ Add the server to `~/.codex/config.toml`.
 ```toml
 [mcp_servers.mymind]
 command = "npx"
-args = ["-y", "@nawwal/mymind-mcp"]
+args = ["-y", "@nawwal/mymind", "mcp"]
 env = { MYMIND_KID = "your_key_id", MYMIND_SECRET = "your_secret" }
 ```
 
@@ -124,7 +124,7 @@ Add the server to `.cursor/mcp.json` or the Cursor user-level MCP config.
   "mcpServers": {
     "mymind": {
       "command": "npx",
-      "args": ["-y", "@nawwal/mymind-mcp"],
+      "args": ["-y", "@nawwal/mymind", "mcp"],
       "env": {
         "MYMIND_KID": "your_key_id",
         "MYMIND_SECRET": "your_secret"
@@ -181,7 +181,7 @@ For reproducible setups, pin a specific package version:
   "mcpServers": {
     "mymind": {
       "command": "npx",
-      "args": ["-y", "@nawwal/mymind-mcp@1.0.0"],
+      "args": ["-y", "@nawwal/mymind@1.0.0", "mcp"],
       "env": {
         "MYMIND_KID": "your_key_id",
         "MYMIND_SECRET": "your_secret"

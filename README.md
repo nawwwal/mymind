@@ -153,16 +153,16 @@ Search my mymind for "receipt" and show the top 3 result titles only.
 
 If your client asks to run a `mymind_*` tool, the server is installed and credentials are being passed correctly.
 
-## API Coverage
+## Coverage
 
-MCP-covered API areas:
+MCP- and CLI-covered API areas:
 
 - `authentication`: every API request is signed with the configured mymind access key.
 - `rate-limits` and `errors`: rate metadata and problem responses are parsed by the client wrapper.
 - `objects`: list, create, fetch, update, delete, restore, pin, unpin, read/replace text content, download inline or to `MYMIND_OUTPUT_DIR`, find related objects, and organize with tags/spaces.
 - `spaces`: list, create, fetch, update, delete, and add/remove objects.
-- `tags`: list tags and add tags to objects. Standalone tag lookup/editing is not exposed as an MCP tool yet.
-- `entities`: fetch an entity by id. The upstream page is treated as WIP/limited.
+- `tags`: list tags and add tags to objects. Standalone tag lookup/editing is not exposed as tools yet.
+- `entities`: not exposed (removed from MCP/CLI; upstream spec dropped entities).
 - `convert`: convert among `text/plain`, `text/markdown`, and `application/prose+json`.
 - `search`: search the authenticated mymind account, including optional semantic/rerank flags when explicitly confirmed.
 
@@ -176,7 +176,7 @@ Reference-only API documentation:
 - `markdown-support`
 - `prose`
 
-See [docs/coverage.md](docs/coverage.md) for the complete coverage table.
+See [docs/coverage.md](docs/coverage.md) for the complete coverage table and [docs/migration.md](docs/migration.md) if you are moving off the old package name.
 
 ## Safety Notes
 
@@ -198,7 +198,7 @@ See [docs/safety.md](docs/safety.md) for more detail.
 
 - Restart the MCP client after changing config.
 - Confirm the config file path is the one your client actually reads.
-- Confirm the command is `npx` and the args are `["-y", "@nawwal/mymind"]`.
+- Confirm the command is `npx` and the args are `["-y", "@nawwal/mymind", "mcp"]`.
 
 ### Authentication fails
 

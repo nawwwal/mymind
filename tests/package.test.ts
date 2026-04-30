@@ -74,6 +74,7 @@ describe("package metadata", () => {
           "docs/client-configs.md",
           "docs/development.md",
           "docs/installation.md",
+          "docs/migration.md",
           "docs/safety.md"
         ])
       );

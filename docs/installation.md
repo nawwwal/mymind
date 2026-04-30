@@ -1,6 +1,6 @@
 # Installation
 
-`@nawwal/mymind-mcp` is published as a public npm package and is normally run directly through `npx`.
+`@nawwal/mymind` is published as a public npm package and is normally run directly through `npx`.
 
 The short version:
 
@@ -43,7 +43,7 @@ The MCP client starts this package as a local child process. The `env` block in 
 
 At runtime:
 
-1. Your MCP client launches `npx -y @nawwal/mymind-mcp`.
+1. Your MCP client launches `npx -y @nawwal/mymind mcp`.
 2. The client passes `MYMIND_KID` and `MYMIND_SECRET` to that process.
 3. The server signs mymind API requests locally with those values.
 4. The values are not stored by this package and are not sent to the MCP host as tool results.
@@ -55,7 +55,7 @@ The credentials still give the local server access to the mymind account represe
 Run the installer through `npx`:
 
 ```sh
-npx -y @nawwal/mymind-mcp install
+npx -y @nawwal/mymind install
 ```
 
 The installer detects supported local MCP clients and configures each one it finds:
@@ -68,7 +68,7 @@ The installer detects supported local MCP clients and configures each one it fin
 Set credentials before running:
 
 ```sh
-MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp install
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind install
 ```
 
 If you do not set credentials first, the installer prompts for them. The secret prompt is hidden in interactive terminals.
@@ -76,26 +76,26 @@ If you do not set credentials first, the installer prompts for them. The secret 
 Preview detected targets without writing:
 
 ```sh
-npx -y @nawwal/mymind-mcp install --dry-run
+npx -y @nawwal/mymind install --dry-run
 ```
 
 Install for one or more specific clients:
 
 ```sh
-npx -y @nawwal/mymind-mcp install --clients=codex
-npx -y @nawwal/mymind-mcp install --clients=claude-code,codex,cursor
+npx -y @nawwal/mymind install --clients=codex
+npx -y @nawwal/mymind install --clients=claude-code,codex,cursor
 ```
 
 For Claude Code, the installer uses user scope by default. You can choose another Claude Code scope:
 
 ```sh
-npx -y @nawwal/mymind-mcp install --clients=claude-code --scope=local
+npx -y @nawwal/mymind install --clients=claude-code --scope=local
 ```
 
 For non-interactive shells, set both credentials and pass `--yes`:
 
 ```sh
-MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp install --yes
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind install --yes
 ```
 
 ## Manual npx Command
@@ -103,13 +103,13 @@ MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp insta
 If you prefer to configure a client by hand, the server command is:
 
 ```sh
-npx -y @nawwal/mymind-mcp
+npx -y @nawwal/mymind mcp
 ```
 
 For a one-off local shell test:
 
 ```sh
-MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind mcp
 ```
 
 For day-to-day use, configure the environment variables inside your MCP client config instead of exporting them globally.
@@ -127,7 +127,7 @@ For day-to-day use, configure the environment variables inside your MCP client c
 
 ## Recommended Setup
 
-1. Run `npx -y @nawwal/mymind-mcp install`, or add the MCP server to your client config manually.
+1. Run `npx -y @nawwal/mymind install`, or add the MCP server to your client config manually.
 2. Put the mymind access-key id in `MYMIND_KID`.
 3. Put the matching mymind access-key secret in `MYMIND_SECRET`.
 4. Leave optional variables unset for the first run.
@@ -160,10 +160,10 @@ If the server is configured correctly, the client should ask to use a `mymind_*`
 
 ## Updating
 
-Because the server is launched with `npx -y @nawwal/mymind-mcp`, clients normally resolve the latest published package. If your environment caches packages aggressively, clear the npm cache or pin a version explicitly:
+Because the server is launched with `npx -y @nawwal/mymind mcp`, clients normally resolve the latest published package. If your environment caches packages aggressively, clear the npm cache or pin a version explicitly:
 
 ```sh
-npx -y @nawwal/mymind-mcp@latest
+npx -y @nawwal/mymind@latest
 ```
 
 ## Package Visibility
@@ -171,7 +171,7 @@ npx -y @nawwal/mymind-mcp@latest
 The npm package is public:
 
 ```sh
-npm view @nawwal/mymind-mcp
+npm view @nawwal/mymind
 ```
 
 The GitHub repository may be private. That does not prevent publishing a public npm package, but it does affect npm provenance generation. See [development.md](development.md).
