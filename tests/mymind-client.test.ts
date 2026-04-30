@@ -142,7 +142,7 @@ describe("MyMindClient", () => {
       response: jsonResponse({}),
       method: "POST",
       path: "/objects/obj%201/tags",
-      jsonBody: [{ name: "research", flags: 1 }],
+      jsonBody: { tags: [{ name: "research", flags: 1 }] },
       contentType: "application/json"
     },
     {
@@ -319,6 +319,43 @@ describe("MyMindClient", () => {
     } else {
       expect(call?.body).toBeUndefined();
     }
+  });
+
+  it.each([
+    {
+      name: "objects list array",
+      call: (client: MyMindClient) => client.listObjects({ limit: 1 }),
+      response: [{ id: "obj_1", title: "Reading", tags: [], created: "2026-01-01T00:00:00Z" }],
+      expectData: [{ id: "obj_1", title: "Reading", tags: [], created: "2026-01-01T00:00:00Z" }]
+    },
+    {
+      name: "spaces list array",
+      call: (client: MyMindClient) => client.listSpaces({ limit: 1 }),
+      response: [{ id: "space_1", name: "Reading", color: "#fef3c7", objects: [{ id: "obj_1" }] }],
+      expectData: [{ id: "space_1", name: "Reading", color: "#fef3c7", objects: [{ id: "obj_1" }] }]
+    },
+    {
+      name: "tags list array",
+      call: (client: MyMindClient) => client.listTags({ limit: 1 }),
+      response: [{ name: "reading", count: 2, flags: 8, modified: "2026-01-01T00:00:00Z" }],
+      expectData: [{ name: "reading", count: 2, flags: 8, modified: "2026-01-01T00:00:00Z" }]
+    },
+    {
+      name: "search matches envelope",
+      call: (client: MyMindClient) => client.search({ q: "reading", limit: 1 }),
+      response: { matches: [{ id: "obj_1", score: 0.99 }] },
+      expectData: [{ id: "obj_1", score: 0.99 }]
+    },
+    {
+      name: "related search matches envelope",
+      call: (client: MyMindClient) => client.findRelatedObjects("obj_1", { limit: 1 }),
+      response: { matches: [{ id: "obj_2", score: 0.81, semanticScore: 0.72 }] },
+      expectData: [{ id: "obj_2", score: 0.81, semanticScore: 0.72 }]
+    }
+  ])("accepts documented response shape for $name", async (testCase) => {
+    const { client } = createHarness({ response: jsonResponse(testCase.response) });
+
+    await expect(testCase.call(client)).resolves.toMatchObject({ data: testCase.expectData });
   });
 
   it("does not expose undocumented tag detail support", () => {
