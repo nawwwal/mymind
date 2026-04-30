@@ -1,6 +1,6 @@
 # Development
 
-This project publishes the public npm package `@nawwal/mymind` from the private GitHub repository `github.com/nawwwal/mymind-mcp`.
+This project publishes the public npm package `@nawwal/mymind` from the GitHub repository `github.com/nawwwal/mymind`.
 
 ## Local Setup
 
@@ -70,7 +70,7 @@ The workflow:
 
 Prefer [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers): link the npm package to this repo/workflow and **do not** set `NPM_TOKEN`. The workflow already has `permissions.id-token: write` and uses `npm publish --provenance`.
 
-Configure on npmjs.com for workflow file **`publish.yml`**, repository **`nawwwal/mymind-mcp`**.
+Configure on npmjs.com for workflow file **`publish.yml`**, repository **`nawwwal/mymind`**.
 
 ### Classic token (fallback)
 
@@ -86,7 +86,7 @@ Do **not** commit tokens.
 ## Release Checklist
 
 1. Bump **`package.json` `version`** on `main` (commit + push).
-2. Confirm `repository.url` points to `github.com/nawwwal/mymind-mcp`.
+2. Confirm `repository.url` points to `github.com/nawwwal/mymind`.
 3. Confirm CI is green on `main`.
 4. Create a **GitHub Release** whose tag matches the version (recommended: tag `v1.2.3` when version is `1.2.3`). Publishing runs automatically from `.github/workflows/publish.yml`.
 5. Optionally re-run **Publish** manually from the Actions tab (`workflow_dispatch`) if you need to retry after fixing npm config (same `package.json` version will fail if already published).

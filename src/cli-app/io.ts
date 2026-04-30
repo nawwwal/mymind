@@ -127,7 +127,7 @@ export function installProcessErrorHandlers(): void {
       code: "BUG_UNHANDLED",
       msg: "Unexpected mymind CLI failure.",
       hint: "Please open an issue with the command, version, and redacted error.",
-      issueUrl: `https://github.com/nawwwal/mymind-mcp/issues/new?title=${encodeURIComponent("Unexpected mymind CLI failure")}&body=${encodeURIComponent(message)}`
+      issueUrl: `https://github.com/nawwwal/mymind/issues/new?title=${encodeURIComponent("Unexpected mymind CLI failure")}&body=${encodeURIComponent(message)}`
     });
     process.exit(Exit.GENERIC);
   };

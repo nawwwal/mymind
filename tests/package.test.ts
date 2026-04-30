@@ -31,7 +31,7 @@ describe("package metadata", () => {
     expect(packageJson.name).toBe("@nawwal/mymind");
     expect(packageJson.repository).toEqual({
       type: "git",
-      url: "git+https://github.com/nawwwal/mymind-mcp.git"
+      url: "git+https://github.com/nawwwal/mymind.git"
     });
     expect(packageJson.publishConfig?.access).toBe("public");
   });

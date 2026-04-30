@@ -8,12 +8,12 @@
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nawwwal/mymind-mcp.git"
+    "url": "git+https://github.com/nawwwal/mymind.git"
   },
   "bugs": {
-    "url": "https://github.com/nawwwal/mymind-mcp/issues"
+    "url": "https://github.com/nawwwal/mymind/issues"
   },
-  "homepage": "https://github.com/nawwwal/mymind-mcp#readme",
+  "homepage": "https://github.com/nawwwal/mymind#readme",
   "bin": {
     "mymind": "./dist/cli.js",
     "mymind-mcp": "./dist/mcp.js"
