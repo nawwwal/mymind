@@ -1,10 +1,10 @@
-import { mkdir, realpath, stat, writeFile } from "node:fs/promises";
-import { basename, isAbsolute, relative, resolve, sep } from "node:path";
+import { stat, writeFile } from "node:fs/promises";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { dryRunResult, jsonContent, jsonResult, summarizeContent } from "../actions/mcp-result.js";
+import { assertAllowedPath, assertOutputPath } from "../actions/paths.js";
 import type { MymindMcpConfig } from "../config.js";
-import type { MyMindClient, MyMindResponse } from "../mymind/index.js";
+import type { MyMindClient } from "../mymind/index.js";
 
 interface ToolDependencies {
   client: MyMindClient;
@@ -142,14 +142,14 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
           });
         }
         requireConfirmed(confirmWrite, "Writing a download requires confirmWrite=true.");
-        const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/download`, accept: "*/*" });
+        const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/blob`, accept: "*/*" });
         await writeFile(outputPath, Buffer.from(await raw.response.arrayBuffer()));
         return jsonContent({ path: outputPath, contentType: raw.response.headers.get("Content-Type"), rateLimit: raw.rateLimit });
       }
       if (dryRun === true) {
         return dryRunResult("mymind_download_object", { id, mode: "inline" });
       }
-      const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/download`, accept: "*/*" });
+      const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/blob`, accept: "*/*" });
       const contentType = raw.response.headers.get("Content-Type") ?? "application/octet-stream";
       if (!contentType.startsWith("text/") && !contentType.includes("json")) {
         return jsonContent({
@@ -311,7 +311,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
   );
 
   registerSpaceTools(server, client);
-  registerTagEntitySearchConvertTools(server, client);
+  registerTagSearchConvertTools(server, client);
 }
 
 function registerSpaceTools(server: McpServer, client: MyMindClient): void {
@@ -389,19 +389,12 @@ function registerSpaceTools(server: McpServer, client: MyMindClient): void {
   });
 }
 
-function registerTagEntitySearchConvertTools(server: McpServer, client: MyMindClient): void {
+function registerTagSearchConvertTools(server: McpServer, client: MyMindClient): void {
   server.registerTool("mymind_list_tags", {
     title: "List tags",
     inputSchema: { limit: z.number().int().positive().max(10000).optional() },
     annotations: { readOnlyHint: true, openWorldHint: true }
   }, async ({ limit }) => jsonResult(await client.listTags({ limit })));
-
-  server.registerTool("mymind_get_entity", {
-    title: "Get entity",
-    description: "Retrieves one entity. The Entities API page is marked WIP/Coming soon.",
-    inputSchema: { id: uid },
-    annotations: { readOnlyHint: true, openWorldHint: true }
-  }, async ({ id }) => jsonResult(await client.getEntity(id)));
 
   server.registerTool("mymind_search_objects", {
     title: "Search objects",
@@ -435,7 +428,7 @@ function registerTagEntitySearchConvertTools(server: McpServer, client: MyMindCl
       to: convertFormat
     },
     annotations: { readOnlyHint: true, openWorldHint: true }
-  }, async ({ content, from, to }) => {
+  },     async ({ content, from, to }) => {
     if (from === to) {
       throw new Error("Convert requires different from and to formats.");
     }
@@ -443,123 +436,8 @@ function registerTagEntitySearchConvertTools(server: McpServer, client: MyMindCl
   });
 }
 
-function jsonResult(result: MyMindResponse<unknown>): CallToolResult {
-  return jsonContent({ data: result.data, rateLimit: result.rateLimit });
-}
-
-function jsonContent(value: unknown): CallToolResult {
-  const result: CallToolResult = {
-    content: [
-      {
-        type: "text" as const,
-        text: JSON.stringify(value, null, 2)
-      }
-    ]
-  };
-  if (isStructuredContent(value)) {
-    result.structuredContent = value;
-  }
-  return result;
-}
-
 function requireConfirmed(value: unknown, message: string): void {
   if (value !== true) {
     throw new Error(message);
   }
-}
-
-async function assertAllowedPath(path: string, roots: string[]): Promise<string> {
-  if (roots.length === 0) {
-    throw new Error("Set MYMIND_ALLOWED_FILE_ROOTS before uploading local files.");
-  }
-
-  const target = await realpath(path);
-  const allowedRoots = await Promise.all(roots.map((root) => realpath(root)));
-  const allowed = allowedRoots.some((root) => isWithinPath(target, root));
-
-  if (!allowed) {
-    throw new Error(`File is outside MYMIND_ALLOWED_FILE_ROOTS: ${path}`);
-  }
-  return target;
-}
-
-async function assertOutputPath(
-  outputDir: string,
-  outputFilename: string,
-  options: { createDirectory: boolean }
-): Promise<string> {
-  const safeName = basename(outputFilename);
-  if (safeName !== outputFilename) {
-    throw new Error("outputFilename must be a filename, not a path.");
-  }
-
-  if (options.createDirectory) {
-    await mkdir(outputDir, { recursive: true });
-  }
-
-  let outputDirRealPath: string;
-  try {
-    outputDirRealPath = await realpath(outputDir);
-  } catch (error) {
-    if (!options.createDirectory && isNotFoundError(error)) {
-      return resolve(outputDir, safeName);
-    }
-    throw error;
-  }
-  const outputPath = resolve(outputDirRealPath, safeName);
-  if (!isWithinPath(outputPath, outputDirRealPath)) {
-    throw new Error("outputFilename resolves outside MYMIND_OUTPUT_DIR.");
-  }
-
-  try {
-    const existingPath = await realpath(outputPath);
-    if (!isWithinPath(existingPath, outputDirRealPath)) {
-      throw new Error("Existing output file resolves outside MYMIND_OUTPUT_DIR.");
-    }
-  } catch (error) {
-    if (!isNotFoundError(error)) {
-      throw error;
-    }
-  }
-
-  return outputPath;
-}
-
-function dryRunResult(action: string, preview: Record<string, unknown>): CallToolResult {
-  return jsonContent({
-    dryRun: true,
-    action,
-    preview: withoutUndefined(preview)
-  });
-}
-
-function withoutUndefined(value: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
-}
-
-function summarizeContent(content: string | Record<string, unknown>): Record<string, unknown> {
-  if (typeof content === "string") {
-    return {
-      type: "text",
-      length: content.length
-    };
-  }
-
-  return {
-    type: "object",
-    keys: Object.keys(content)
-  };
-}
-
-function isStructuredContent(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isWithinPath(target: string, root: string): boolean {
-  const relation = relative(root, target);
-  return relation === "" || (relation !== ".." && !relation.startsWith(`..${sep}`) && !isAbsolute(relation));
-}
-
-function isNotFoundError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
