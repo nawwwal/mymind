@@ -6,3 +6,5 @@ This package exists only for backwards compatibility. New installs should use **
 - MCP entry: `mymind-mcp` (from `@nawwal/mymind`) or `npx -y @nawwal/mymind mcp`
 
 This shim prints a one-line deprecation warning and executes the real binary from `@nawwal/mymind`.
+
+Lifecycle: publish this once as `@nawwal/mymind-mcp@0.2.0`, keep it available for one minor cycle, then leave the package deprecated on npm with no further feature work.

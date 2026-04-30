@@ -1,4 +1,4 @@
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -17,13 +17,20 @@ export async function tryLoadCredentialsFromFile(
 ): Promise<{ kid: string; secret: string } | null> {
   const path = credentialsFilePath(env);
   try {
+    const info = await stat(path);
+    if ((info.mode & 0o077) !== 0) {
+      throw new Error(`Refusing to read ${path}; run chmod 600 ${path}.`);
+    }
     const raw = await readFile(path, "utf8");
     const data = JSON.parse(raw) as CredentialsFileShape;
     const profile = data.profiles?.default ?? data.profiles?.personal;
     if (profile?.kid && profile?.secret) {
       return { kid: profile.kid, secret: profile.secret };
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Refusing to read")) {
+      throw error;
+    }
     return null;
   }
   return null;

@@ -50,6 +50,7 @@ The workflow:
 - runs typechecking if a typecheck script exists
 - runs tests if a test script exists
 - runs the build if a build script exists
+- regenerates manifest and JSON Schemas and fails if `docs/manifest.json` or `docs/schemas` drift
 - checks the package contents with `npm run pack:check`
 
 ## Lockfile Strategy
@@ -58,32 +59,38 @@ The workflow:
 
 ## Publishing
 
-`.github/workflows/publish.yml` publishes to npm when a GitHub Release is published.
+`.github/workflows/publish.yml` publishes `@nawwal/mymind` when:
 
-Publishing uses npm trusted publishing with GitHub Actions OIDC:
+1. You **publish a GitHub Release** (recommended): workflow runs on `release: published`, checks that `package.json` `version` matches the release tag (e.g. tag `v1.2.3` ↔ version `1.2.3`), then runs `npm publish --access public --provenance`.
+2. You trigger **Actions → Publish → Run workflow** (`workflow_dispatch`): publishes whatever version is currently in `package.json` on that ref (npm rejects if that version already exists).
 
-- no `NPM_TOKEN`
-- `permissions.id-token: write`
-- GitHub-hosted `ubuntu-latest` runner
-- Node 24
-- public npm access
+`npm publish` runs **`prepublishOnly`**, which executes **`npm run verify`** (typecheck, tests, build, manifest/schema drift checks, pack check).
 
-The npm package settings must trust this exact GitHub workflow:
+### Trusted publishing (OIDC, no long-lived token)
 
-- owner: `nawwwal`
-- repository: `mymind-mcp`
-- workflow filename: `publish.yml`
+Prefer [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers): link the npm package to this repo/workflow and **do not** set `NPM_TOKEN`. The workflow already has `permissions.id-token: write` and uses `npm publish --provenance`.
 
-Because the GitHub repository is private, npm provenance attestations are not expected even though trusted publishing is used. Trusted publishing still removes the need for a long-lived publish token.
+Configure on npmjs.com for workflow file **`publish.yml`**, repository **`nawwwal/mymind-mcp`**.
+
+### Classic token (fallback)
+
+If Trusted Publishers are not configured, add an **`NPM_TOKEN`** repository secret (automation token from npm) **and** add this under the “Publish to npm” step in `publish.yml`:
+
+```yaml
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+Do **not** commit tokens.
 
 ## Release Checklist
 
-1. Confirm `package.json` has the package name `@nawwal/mymind`.
-2. Confirm `package.json` `repository.url` points to `github.com/nawwwal/mymind-mcp`.
-3. Run the CI checks locally where practical.
-4. Create a GitHub Release.
-5. Let `.github/workflows/publish.yml` publish through OIDC.
-6. Confirm the public package is visible:
+1. Bump **`package.json` `version`** on `main` (commit + push).
+2. Confirm `repository.url` points to `github.com/nawwwal/mymind-mcp`.
+3. Confirm CI is green on `main`.
+4. Create a **GitHub Release** whose tag matches the version (recommended: tag `v1.2.3` when version is `1.2.3`). Publishing runs automatically from `.github/workflows/publish.yml`.
+5. Optionally re-run **Publish** manually from the Actions tab (`workflow_dispatch`) if you need to retry after fixing npm config (same `package.json` version will fail if already published).
+6. Confirm the package:
 
 ```sh
 npm view @nawwal/mymind
@@ -94,5 +101,5 @@ npm view @nawwal/mymind
 Keep these docs synchronized when API coverage changes:
 
 - `README.md`
-- `docs/api-coverage.md`
+- `docs/coverage.md`
 - `docs/client-configs.md` if the launch command changes
