@@ -28,7 +28,7 @@ describe("package metadata", () => {
   it("targets the private GitHub repository while publishing a public npm package", async () => {
     const packageJson = await readPackageJson();
 
-    expect(packageJson.name).toBe("@nawwal/mymind-mcp");
+    expect(packageJson.name).toBe("@nawwal/mymind");
     expect(packageJson.repository).toEqual({
       type: "git",
       url: "git+https://github.com/nawwwal/mymind-mcp.git"

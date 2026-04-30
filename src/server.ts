@@ -11,11 +11,12 @@ export interface ServerDependencies {
 
 export function createMymindMcpServer({ config }: ServerDependencies): McpServer {
   const server = new McpServer({
-    name: "@nawwal/mymind-mcp",
-    version: "0.1.0"
+    name: "@nawwal/mymind",
+    version: "1.0.0"
   }, {
     instructions:
       "Use this server to search, read, create, and organize the authenticated user's mymind account. " +
+      "The same capabilities are available via the `mymind` CLI (`npx -y @nawwal/mymind`). " +
       "Prefer read-only tools first. Write, destructive, high-cost, upload, and download-to-disk tools require explicit host approval and confirmation fields."
   });
 
