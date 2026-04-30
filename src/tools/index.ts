@@ -1,9 +1,35 @@
-import { stat, writeFile } from "node:fs/promises";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { requireHighCostSearchConfirm, requireLiteralConfirm } from "../actions/confirm.js";
-import { dryRunResult, jsonContent, jsonResult, summarizeContent } from "../actions/mcp-result.js";
-import { assertAllowedPath, assertOutputPath } from "../actions/paths.js";
+import {
+  mymindAddObjectSpacesAction,
+  mymindAddObjectTagsAction,
+  mymindCreateObjectAction,
+  mymindDeleteObjectAction,
+  mymindDownloadObjectAction,
+  mymindFindRelatedObjectsAction,
+  mymindGetObjectAction,
+  mymindGetObjectContentAction,
+  mymindListObjectsAction,
+  mymindPinObjectAction,
+  mymindReplaceNoteContentAction,
+  mymindRestoreObjectAction,
+  mymindUnpinObjectAction,
+  mymindUpdateObjectAction
+} from "../actions/object-actions.js";
+import {
+  mymindAddObjectToSpaceAction,
+  mymindCreateSpaceAction,
+  mymindDeleteSpaceAction,
+  mymindGetSpaceAction,
+  mymindListSpacesAction,
+  mymindRemoveObjectFromSpaceAction,
+  mymindUpdateSpaceAction
+} from "../actions/space-actions.js";
+import {
+  mymindConvertContentAction,
+  mymindListTagsAction,
+  mymindSearchObjectsAction
+} from "../actions/tag-search-convert-actions.js";
 import type { MymindMcpConfig } from "../config.js";
 import type { MyMindClient } from "../mymind/index.js";
 
@@ -32,7 +58,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       },
       annotations: { readOnlyHint: true, openWorldHint: true }
     },
-    async ({ id, limit }) => jsonResult(await client.listObjects({ id, limit }))
+    ({ id, limit }) => mymindListObjectsAction(client, { id, limit })
   );
 
   server.registerTool(
@@ -53,37 +79,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
     },
-    async ({ filePath, mimeType, confirmHighCost, dryRun, ...input }) => {
-      const provided = [input.url, input.content, filePath].filter((value) => value !== undefined).length;
-      if (provided !== 1) {
-        throw new Error("Provide exactly one of url, content, or filePath.");
-      }
-      if (filePath !== undefined) {
-        const uploadPath = await assertAllowedPath(filePath, config.allowedFileRoots);
-        const stats = await stat(uploadPath);
-        if (!stats.isFile()) {
-          throw new Error(`Upload path is not a file: ${filePath}`);
-        }
-        if (stats.size > 64 * 1024 * 1024) {
-          throw new Error("MyMind uploads are capped at 64 MB.");
-        }
-        if (dryRun === true) {
-          return dryRunResult("mymind_create_object", {
-            ...input,
-            filePath: uploadPath,
-            mimeType,
-            fileSize: stats.size
-          });
-        }
-        requireLiteralConfirm(confirmHighCost, "Creating objects can cost up to 250 credits.");
-        return jsonResult(await client.createObjectFromFile(uploadPath, { ...input, mimeType }));
-      }
-      if (dryRun === true) {
-        return dryRunResult("mymind_create_object", input);
-      }
-      requireLiteralConfirm(confirmHighCost, "Creating objects can cost up to 250 credits.");
-      return jsonResult(await client.createObject(input));
-    }
+    (input) => mymindCreateObjectAction(client, config, input)
   );
 
   server.registerTool(
@@ -94,7 +90,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid },
       annotations: { readOnlyHint: true, openWorldHint: true }
     },
-    async ({ id }) => jsonResult(await client.getObject(id))
+    ({ id }) => mymindGetObjectAction(client, id)
   );
 
   server.registerTool(
@@ -109,10 +105,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       },
       annotations: { readOnlyHint: true, openWorldHint: true }
     },
-    async ({ id, limit, confirmHighCost }) => {
-      requireLiteralConfirm(confirmHighCost, "Related-object search costs 100 credits and may require Mastermind.");
-      return jsonResult(await client.findRelatedObjects(id, { limit }));
-    }
+    (input) => mymindFindRelatedObjectsAction(client, input)
   );
 
   server.registerTool(
@@ -128,39 +121,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
     },
-    async ({ id, outputFilename, dryRun, confirmWrite }) => {
-      if (outputFilename !== undefined) {
-        if (!config.outputDir) {
-          throw new Error("Set MYMIND_OUTPUT_DIR to save downloads.");
-        }
-        const outputPath = await assertOutputPath(config.outputDir, outputFilename, { createDirectory: dryRun !== true });
-        if (dryRun === true) {
-          return dryRunResult("mymind_download_object", {
-            id,
-            outputFilename,
-            outputPath,
-            outputDir: config.outputDir
-          });
-        }
-        requireLiteralConfirm(confirmWrite, "Writing a download requires confirmWrite=true.");
-        const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/blob`, accept: "*/*" });
-        await writeFile(outputPath, Buffer.from(await raw.response.arrayBuffer()));
-        return jsonContent({ path: outputPath, contentType: raw.response.headers.get("Content-Type"), rateLimit: raw.rateLimit });
-      }
-      if (dryRun === true) {
-        return dryRunResult("mymind_download_object", { id, mode: "inline" });
-      }
-      const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/blob`, accept: "*/*" });
-      const contentType = raw.response.headers.get("Content-Type") ?? "application/octet-stream";
-      if (!contentType.startsWith("text/") && !contentType.includes("json")) {
-        return jsonContent({
-          contentType,
-          message: "Binary response not returned inline. Provide outputFilename and set MYMIND_OUTPUT_DIR to save it.",
-          rateLimit: raw.rateLimit
-        });
-      }
-      return jsonContent({ content: await raw.response.text(), contentType, rateLimit: raw.rateLimit });
-    }
+    (input) => mymindDownloadObjectAction(client, config, input)
   );
 
   server.registerTool(
@@ -171,7 +132,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid, format: contentFormat },
       annotations: { readOnlyHint: true, openWorldHint: true }
     },
-    async ({ id, format }) => jsonResult(await client.getObjectContent(id, format))
+    ({ id, format }) => mymindGetObjectContentAction(client, id, format)
   );
 
   server.registerTool(
@@ -182,13 +143,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid, title: z.string().optional(), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
     },
-    async ({ id, confirmWrite, dryRun, ...input }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_update_object", { id, ...input });
-      }
-      requireLiteralConfirm(confirmWrite, "Updating object metadata requires confirmation.");
-      return jsonResult(await client.updateObject(id, input));
-    }
+    (input) => mymindUpdateObjectAction(client, input)
   );
 
   server.registerTool(
@@ -205,13 +160,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       },
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true }
     },
-    async ({ id, content, contentType, confirmReplace, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_replace_note_content", { id, contentType, content: summarizeContent(content) });
-      }
-      requireLiteralConfirm(confirmReplace, "Replacing note content is destructive.");
-      return jsonResult(await client.replaceObjectContent(id, content, contentType));
-    }
+    (input) => mymindReplaceNoteContentAction(client, input)
   );
 
   server.registerTool(
@@ -221,13 +170,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { objectId: uid, tags: z.array(tagInput).min(1), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
     },
-    async ({ objectId, tags, confirmWrite, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_add_object_tags", { objectId, tags });
-      }
-      requireLiteralConfirm(confirmWrite, "Adding tags requires confirmation.");
-      return jsonResult(await client.addObjectTags(objectId, tags));
-    }
+    (input) => mymindAddObjectTagsAction(client, input)
   );
 
   server.registerTool(
@@ -237,13 +180,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { objectId: uid, spaces: z.array(spaceRefInput).min(1), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
     },
-    async ({ objectId, spaces, confirmWrite, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_add_object_spaces", { objectId, spaces });
-      }
-      requireLiteralConfirm(confirmWrite, "Adding spaces requires confirmation.");
-      return jsonResult(await client.addObjectSpaces(objectId, spaces));
-    }
+    (input) => mymindAddObjectSpacesAction(client, input)
   );
 
   server.registerTool(
@@ -253,13 +190,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid, position: z.number().optional(), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
     },
-    async ({ id, position, confirmWrite, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_pin_object", { id, position });
-      }
-      requireLiteralConfirm(confirmWrite, "Pinning requires confirmation.");
-      return jsonResult(await client.pinObject(id, position));
-    }
+    (input) => mymindPinObjectAction(client, input)
   );
 
   server.registerTool(
@@ -269,13 +200,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid, dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
     },
-    async ({ id, confirmWrite, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_unpin_object", { id });
-      }
-      requireLiteralConfirm(confirmWrite, "Unpinning requires confirmation.");
-      return jsonResult(await client.unpinObject(id));
-    }
+    (input) => mymindUnpinObjectAction(client, input)
   );
 
   server.registerTool(
@@ -286,13 +211,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid, dryRun: dryRunInput, confirmDelete: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true }
     },
-    async ({ id, confirmDelete, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_delete_object", { id });
-      }
-      requireLiteralConfirm(confirmDelete, "Deleting an object requires confirmDelete=true.");
-      return jsonResult(await client.deleteObject(id));
-    }
+    (input) => mymindDeleteObjectAction(client, input)
   );
 
   server.registerTool(
@@ -302,13 +221,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       inputSchema: { id: uid, dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
     },
-    async ({ id, confirmWrite, dryRun }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_restore_object", { id });
-      }
-      requireLiteralConfirm(confirmWrite, "Restoring requires confirmation.");
-      return jsonResult(await client.restoreObject(id));
-    }
+    (input) => mymindRestoreObjectAction(client, input)
   );
 
   registerSpaceTools(server, client);
@@ -316,121 +229,120 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
 }
 
 function registerSpaceTools(server: McpServer, client: MyMindClient): void {
-  server.registerTool("mymind_create_space", {
-    title: "Create space",
-    inputSchema: { name: z.string().min(1), color: z.string().optional(), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, async ({ confirmWrite, dryRun, ...input }) => {
-    if (dryRun === true) {
-      return dryRunResult("mymind_create_space", input);
-    }
-    requireLiteralConfirm(confirmWrite, "Creating a space costs 100 credits.");
-    return jsonResult(await client.createSpace(input));
-  });
+  server.registerTool(
+    "mymind_create_space",
+    {
+      title: "Create space",
+      inputSchema: { name: z.string().min(1), color: z.string().optional(), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+    },
+    (input) => mymindCreateSpaceAction(client, input)
+  );
 
-  server.registerTool("mymind_get_space", {
-    title: "Get space",
-    inputSchema: { id: uid },
-    annotations: { readOnlyHint: true, openWorldHint: true }
-  }, async ({ id }) => jsonResult(await client.getSpace(id)));
+  server.registerTool(
+    "mymind_get_space",
+    {
+      title: "Get space",
+      inputSchema: { id: uid },
+      annotations: { readOnlyHint: true, openWorldHint: true }
+    },
+    ({ id }) => mymindGetSpaceAction(client, id)
+  );
 
-  server.registerTool("mymind_list_spaces", {
-    title: "List spaces",
-    inputSchema: {},
-    annotations: { readOnlyHint: true, openWorldHint: true }
-  }, async () => jsonResult(await client.listSpaces()));
+  server.registerTool(
+    "mymind_list_spaces",
+    {
+      title: "List spaces",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, openWorldHint: true }
+    },
+    () => mymindListSpacesAction(client)
+  );
 
-  server.registerTool("mymind_update_space", {
-    title: "Update space",
-    inputSchema: { id: uid, name: z.string().optional(), color: z.string().optional(), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, async ({ id, confirmWrite, dryRun, ...input }) => {
-    if (dryRun === true) {
-      return dryRunResult("mymind_update_space", { id, ...input });
-    }
-    requireLiteralConfirm(confirmWrite, "Updating a space requires confirmation.");
-    return jsonResult(await client.updateSpace(id, input));
-  });
+  server.registerTool(
+    "mymind_update_space",
+    {
+      title: "Update space",
+      inputSchema: { id: uid, name: z.string().optional(), color: z.string().optional(), dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+    },
+    (input) => mymindUpdateSpaceAction(client, input)
+  );
 
-  server.registerTool("mymind_delete_space", {
-    title: "Delete space",
-    description: "Deletes the space only; contained objects remain in MyMind.",
-    inputSchema: { id: uid, dryRun: dryRunInput, confirmDelete: z.literal(true).optional() },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true }
-  }, async ({ id, confirmDelete, dryRun }) => {
-    if (dryRun === true) {
-      return dryRunResult("mymind_delete_space", { id });
-    }
-    requireLiteralConfirm(confirmDelete, "Deleting a space requires confirmDelete=true.");
-    return jsonResult(await client.deleteSpace(id));
-  });
+  server.registerTool(
+    "mymind_delete_space",
+    {
+      title: "Delete space",
+      description: "Deletes the space only; contained objects remain in MyMind.",
+      inputSchema: { id: uid, dryRun: dryRunInput, confirmDelete: z.literal(true).optional() },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true }
+    },
+    (input) => mymindDeleteSpaceAction(client, input)
+  );
 
-  server.registerTool("mymind_add_object_to_space", {
-    title: "Add object to space",
-    inputSchema: { spaceId: uid, objectId: uid, dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, async ({ spaceId, objectId, confirmWrite, dryRun }) => {
-    if (dryRun === true) {
-      return dryRunResult("mymind_add_object_to_space", { spaceId, objectId });
-    }
-    requireLiteralConfirm(confirmWrite, "Adding object to space requires confirmation.");
-    return jsonResult(await client.addObjectToSpace(spaceId, objectId));
-  });
+  server.registerTool(
+    "mymind_add_object_to_space",
+    {
+      title: "Add object to space",
+      inputSchema: { spaceId: uid, objectId: uid, dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+    },
+    (input) => mymindAddObjectToSpaceAction(client, input)
+  );
 
-  server.registerTool("mymind_remove_object_from_space", {
-    title: "Remove object from space",
-    inputSchema: { spaceId: uid, objectId: uid, dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, async ({ spaceId, objectId, confirmWrite, dryRun }) => {
-    if (dryRun === true) {
-      return dryRunResult("mymind_remove_object_from_space", { spaceId, objectId });
-    }
-    requireLiteralConfirm(confirmWrite, "Removing object from space requires confirmation.");
-    return jsonResult(await client.removeObjectFromSpace(spaceId, objectId));
-  });
+  server.registerTool(
+    "mymind_remove_object_from_space",
+    {
+      title: "Remove object from space",
+      inputSchema: { spaceId: uid, objectId: uid, dryRun: dryRunInput, confirmWrite: z.literal(true).optional() },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+    },
+    (input) => mymindRemoveObjectFromSpaceAction(client, input)
+  );
 }
 
 function registerTagSearchConvertTools(server: McpServer, client: MyMindClient): void {
-  server.registerTool("mymind_list_tags", {
-    title: "List tags",
-    inputSchema: { limit: z.number().int().positive().max(10000).optional() },
-    annotations: { readOnlyHint: true, openWorldHint: true }
-  }, async ({ limit }) => jsonResult(await client.listTags({ limit })));
-
-  server.registerTool("mymind_search_objects", {
-    title: "Search objects",
-    description: "Searches objects with MyMind query syntax. Rerank is Mastermind-only and capped at 100.",
-    inputSchema: {
-      q: z.string().min(1),
-      limit: z.number().int().positive().max(1000).optional(),
-      semantic: z.boolean().optional(),
-      semanticBoost: z.number().optional(),
-      rerank: z.boolean().optional(),
-      dryRun: dryRunInput,
-      confirmHighCost: z.literal(true).optional()
+  server.registerTool(
+    "mymind_list_tags",
+    {
+      title: "List tags",
+      inputSchema: { limit: z.number().int().positive().max(10000).optional() },
+      annotations: { readOnlyHint: true, openWorldHint: true }
     },
-    annotations: { readOnlyHint: true, openWorldHint: true }
-  },     async ({ confirmHighCost, dryRun, ...input }) => {
-      if (dryRun === true) {
-        return dryRunResult("mymind_search_objects", input);
-      }
-      requireHighCostSearchConfirm(confirmHighCost, input.semantic, input.rerank);
-      return jsonResult(await client.search(input));
-    });
+    (input) => mymindListTagsAction(client, input)
+  );
 
-  server.registerTool("mymind_convert_content", {
-    title: "Convert content",
-    description: "Converts between text/plain, text/markdown, and application/prose+json.",
-    inputSchema: {
-      content: z.union([z.string(), z.record(z.unknown())]),
-      from: convertFormat,
-      to: convertFormat
+  server.registerTool(
+    "mymind_search_objects",
+    {
+      title: "Search objects",
+      description: "Searches objects with MyMind query syntax. Rerank is Mastermind-only and capped at 100.",
+      inputSchema: {
+        q: z.string().min(1),
+        limit: z.number().int().positive().max(1000).optional(),
+        semantic: z.boolean().optional(),
+        semanticBoost: z.number().optional(),
+        rerank: z.boolean().optional(),
+        dryRun: dryRunInput,
+        confirmHighCost: z.literal(true).optional()
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true }
     },
-    annotations: { readOnlyHint: true, openWorldHint: true }
-  },     async ({ content, from, to }) => {
-    if (from === to) {
-      throw new Error("Convert requires different from and to formats.");
-    }
-    return jsonResult(await client.convert({ content, from, to }));
-  });
+    (input) => mymindSearchObjectsAction(client, input)
+  );
+
+  server.registerTool(
+    "mymind_convert_content",
+    {
+      title: "Convert content",
+      description: "Converts between text/plain, text/markdown, and application/prose+json.",
+      inputSchema: {
+        content: z.union([z.string(), z.record(z.unknown())]),
+        from: convertFormat,
+        to: convertFormat
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true }
+    },
+    (input) => mymindConvertContentAction(client, input)
+  );
 }
