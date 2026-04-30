@@ -18,7 +18,7 @@ export function createMymindMcpServer({ config, client: clientInjected }: Server
   }, {
     instructions:
       "Use this server to search, read, create, and organize the authenticated user's mymind account. " +
-      "The same capabilities are available via the `mymind` CLI (`npx -y @nawwal/mymind`). " +
+      "The same capabilities are available via the installed `mymind` CLI. " +
       "Prefer read-only tools first. Write, destructive, high-cost, upload, and download-to-disk tools require explicit host approval and confirmation fields."
   });
 

@@ -8,7 +8,7 @@ import { tryLoadCredentialsFromFile } from "./auth/credentials-file.js";
 
 const SERVER_NAME = "mymind";
 const DEFAULT_PACKAGE_SPEC = "@nawwal/mymind";
-const DEFAULT_COMMAND = "npx";
+const DEFAULT_COMMAND = "mymind";
 
 type ClientId = "claude-code" | "claude-desktop" | "codex" | "cursor";
 
@@ -68,12 +68,7 @@ export async function runInstallCommand(argv: string[]): Promise<void> {
     throw new Error("Non-interactive install requires --yes (or use --dry-run).");
   }
 
-  let credentials: Credentials | null = null;
-  if (!options.useBinOnly) {
-    credentials = await getCredentials(options.env, options.noInput);
-  }
-
-  const config = createServerConfig(credentials, options.packageSpec, options.useBinOnly);
+  const config = createServerConfig(null, options.packageSpec, options.useBinOnly);
   const targets = await resolveTargets(options);
 
   if (targets.length === 0) {
@@ -163,23 +158,15 @@ export function createServerConfig(
   packageSpec = DEFAULT_PACKAGE_SPEC,
   useBinOnly = false
 ): ServerConfig {
-  if (useBinOnly) {
-    return {
-      command: DEFAULT_COMMAND,
-      args: ["-y", packageSpec, "mcp"],
-      env: {}
-    };
-  }
-  if (!credentials?.kid || !credentials?.secret) {
-    throw new Error("Credentials are required unless --use-bin-only is set.");
-  }
+  void packageSpec;
+  void useBinOnly;
   return {
     command: DEFAULT_COMMAND,
-    args: ["-y", packageSpec, "mcp"],
-    env: {
+    args: ["mcp"],
+    env: credentials?.kid && credentials.secret ? {
       MYMIND_KID: credentials.kid,
       MYMIND_SECRET: credentials.secret
-    }
+    } : {}
   };
 }
 
@@ -248,14 +235,14 @@ Usage:
   mymind install [options]
 
 Credentials:
-  Set MYMIND_KID and MYMIND_SECRET, use saved credentials from ~/.config/mymind/credentials.json,
-  or enter them when prompted (TTY only).
+  Run \`mymind login\` once before installing. The MCP server will resolve saved credentials
+  from ~/.config/mymind/credentials.json, macOS Keychain, or MYMIND_KID/MYMIND_SECRET at runtime.
 
 Options:
   --clients=auto|claude-code,claude-desktop,codex,cursor
   --scope=user|local|project       Claude Code scope. Defaults to user.
-  --package=@nawwal/mymind         Package spec passed to npx.
-  --use-bin-only                   Run \`npx -y <package> mcp\` without embedding secrets (resolve via credential file/env at runtime).
+  --package=@nawwal/mymind         Deprecated; MCP configs use the installed \`mymind\` binary.
+  --use-bin-only                   Deprecated; MCP configs already use the installed \`mymind\` binary.
   --dry-run                        Show detected targets without writing.
   --yes, -y                        Do not ask before writing.
   --no-input                       Fail instead of prompting (implies you must pass --yes for writes).

@@ -17,10 +17,10 @@ const serverConfig = createServerConfig({
 });
 
 describe("installer config helpers", () => {
-  it("creates the standard npx server config", () => {
+  it("creates the standard installed-binary server config", () => {
     expect(serverConfig).toEqual({
-      command: "npx",
-      args: ["-y", "@nawwal/mymind", "mcp"],
+      command: "mymind",
+      args: ["mcp"],
       env: {
         MYMIND_KID: "kid_123",
         MYMIND_SECRET: "secret_456"
@@ -30,8 +30,8 @@ describe("installer config helpers", () => {
 
   it("creates bin-only config without embedded secrets", () => {
     expect(createServerConfig(null, "@nawwal/mymind", true)).toEqual({
-      command: "npx",
-      args: ["-y", "@nawwal/mymind", "mcp"],
+      command: "mymind",
+      args: ["mcp"],
       env: {}
     });
   });
@@ -118,11 +118,11 @@ describe("installer config helpers", () => {
     const replaced = replaceTomlSection(
       source,
       "mcp_servers.mymind",
-      ['[mcp_servers.mymind]', 'command = "npx"', 'args = ["-y", "@nawwal/mymind", "mcp"]'].join("\n")
+      ['[mcp_servers.mymind]', 'command = "mymind"', 'args = ["mcp"]'].join("\n")
     );
 
     expect(replaced).toContain('[profile]\nname = "default"');
-    expect(replaced).toContain('[mcp_servers.mymind]\ncommand = "npx"');
+    expect(replaced).toContain('[mcp_servers.mymind]\ncommand = "mymind"');
     expect(replaced).toContain('[mcp_servers.other]\ncommand = "node"');
     expect(replaced).not.toContain('command = "old"');
   });
@@ -136,8 +136,8 @@ describe("installer config helpers", () => {
     const config = await readFile(path, "utf8");
 
     expect(config).toContain("[mcp_servers.mymind]");
-    expect(config).toContain('command = "npx"');
-    expect(config).toContain('args = ["-y", "@nawwal/mymind", "mcp"]');
+    expect(config).toContain('command = "mymind"');
+    expect(config).toContain('args = ["mcp"]');
     expect(config).toContain('MYMIND_KID = "kid_123"');
     expect(config).toContain('MYMIND_SECRET = "secret_456"');
   });
