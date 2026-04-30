@@ -1,6 +1,7 @@
 import { stat, writeFile } from "node:fs/promises";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { requireHighCostSearchConfirm, requireLiteralConfirm } from "../actions/confirm.js";
 import { dryRunResult, jsonContent, jsonResult, summarizeContent } from "../actions/mcp-result.js";
 import { assertAllowedPath, assertOutputPath } from "../actions/paths.js";
 import type { MymindMcpConfig } from "../config.js";
@@ -74,13 +75,13 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
             fileSize: stats.size
           });
         }
-        requireConfirmed(confirmHighCost, "Creating objects can cost up to 250 credits.");
+        requireLiteralConfirm(confirmHighCost, "Creating objects can cost up to 250 credits.");
         return jsonResult(await client.createObjectFromFile(uploadPath, { ...input, mimeType }));
       }
       if (dryRun === true) {
         return dryRunResult("mymind_create_object", input);
       }
-      requireConfirmed(confirmHighCost, "Creating objects can cost up to 250 credits.");
+      requireLiteralConfirm(confirmHighCost, "Creating objects can cost up to 250 credits.");
       return jsonResult(await client.createObject(input));
     }
   );
@@ -109,7 +110,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       annotations: { readOnlyHint: true, openWorldHint: true }
     },
     async ({ id, limit, confirmHighCost }) => {
-      requireConfirmed(confirmHighCost, "Related-object search costs 100 credits and may require Mastermind.");
+      requireLiteralConfirm(confirmHighCost, "Related-object search costs 100 credits and may require Mastermind.");
       return jsonResult(await client.findRelatedObjects(id, { limit }));
     }
   );
@@ -141,7 +142,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
             outputDir: config.outputDir
           });
         }
-        requireConfirmed(confirmWrite, "Writing a download requires confirmWrite=true.");
+        requireLiteralConfirm(confirmWrite, "Writing a download requires confirmWrite=true.");
         const raw = await client.requestRaw({ path: `/objects/${encodeURIComponent(id)}/blob`, accept: "*/*" });
         await writeFile(outputPath, Buffer.from(await raw.response.arrayBuffer()));
         return jsonContent({ path: outputPath, contentType: raw.response.headers.get("Content-Type"), rateLimit: raw.rateLimit });
@@ -185,7 +186,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_update_object", { id, ...input });
       }
-      requireConfirmed(confirmWrite, "Updating object metadata requires confirmation.");
+      requireLiteralConfirm(confirmWrite, "Updating object metadata requires confirmation.");
       return jsonResult(await client.updateObject(id, input));
     }
   );
@@ -208,7 +209,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_replace_note_content", { id, contentType, content: summarizeContent(content) });
       }
-      requireConfirmed(confirmReplace, "Replacing note content is destructive.");
+      requireLiteralConfirm(confirmReplace, "Replacing note content is destructive.");
       return jsonResult(await client.replaceObjectContent(id, content, contentType));
     }
   );
@@ -224,7 +225,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_add_object_tags", { objectId, tags });
       }
-      requireConfirmed(confirmWrite, "Adding tags requires confirmation.");
+      requireLiteralConfirm(confirmWrite, "Adding tags requires confirmation.");
       return jsonResult(await client.addObjectTags(objectId, tags));
     }
   );
@@ -240,7 +241,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_add_object_spaces", { objectId, spaces });
       }
-      requireConfirmed(confirmWrite, "Adding spaces requires confirmation.");
+      requireLiteralConfirm(confirmWrite, "Adding spaces requires confirmation.");
       return jsonResult(await client.addObjectSpaces(objectId, spaces));
     }
   );
@@ -256,7 +257,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_pin_object", { id, position });
       }
-      requireConfirmed(confirmWrite, "Pinning requires confirmation.");
+      requireLiteralConfirm(confirmWrite, "Pinning requires confirmation.");
       return jsonResult(await client.pinObject(id, position));
     }
   );
@@ -272,7 +273,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_unpin_object", { id });
       }
-      requireConfirmed(confirmWrite, "Unpinning requires confirmation.");
+      requireLiteralConfirm(confirmWrite, "Unpinning requires confirmation.");
       return jsonResult(await client.unpinObject(id));
     }
   );
@@ -289,7 +290,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_delete_object", { id });
       }
-      requireConfirmed(confirmDelete, "Deleting an object requires confirmDelete=true.");
+      requireLiteralConfirm(confirmDelete, "Deleting an object requires confirmDelete=true.");
       return jsonResult(await client.deleteObject(id));
     }
   );
@@ -305,7 +306,7 @@ export function registerMymindTools(server: McpServer, { client, config }: ToolD
       if (dryRun === true) {
         return dryRunResult("mymind_restore_object", { id });
       }
-      requireConfirmed(confirmWrite, "Restoring requires confirmation.");
+      requireLiteralConfirm(confirmWrite, "Restoring requires confirmation.");
       return jsonResult(await client.restoreObject(id));
     }
   );
@@ -323,7 +324,7 @@ function registerSpaceTools(server: McpServer, client: MyMindClient): void {
     if (dryRun === true) {
       return dryRunResult("mymind_create_space", input);
     }
-    requireConfirmed(confirmWrite, "Creating a space costs 100 credits.");
+    requireLiteralConfirm(confirmWrite, "Creating a space costs 100 credits.");
     return jsonResult(await client.createSpace(input));
   });
 
@@ -347,7 +348,7 @@ function registerSpaceTools(server: McpServer, client: MyMindClient): void {
     if (dryRun === true) {
       return dryRunResult("mymind_update_space", { id, ...input });
     }
-    requireConfirmed(confirmWrite, "Updating a space requires confirmation.");
+    requireLiteralConfirm(confirmWrite, "Updating a space requires confirmation.");
     return jsonResult(await client.updateSpace(id, input));
   });
 
@@ -360,7 +361,7 @@ function registerSpaceTools(server: McpServer, client: MyMindClient): void {
     if (dryRun === true) {
       return dryRunResult("mymind_delete_space", { id });
     }
-    requireConfirmed(confirmDelete, "Deleting a space requires confirmDelete=true.");
+    requireLiteralConfirm(confirmDelete, "Deleting a space requires confirmDelete=true.");
     return jsonResult(await client.deleteSpace(id));
   });
 
@@ -372,7 +373,7 @@ function registerSpaceTools(server: McpServer, client: MyMindClient): void {
     if (dryRun === true) {
       return dryRunResult("mymind_add_object_to_space", { spaceId, objectId });
     }
-    requireConfirmed(confirmWrite, "Adding object to space requires confirmation.");
+    requireLiteralConfirm(confirmWrite, "Adding object to space requires confirmation.");
     return jsonResult(await client.addObjectToSpace(spaceId, objectId));
   });
 
@@ -384,7 +385,7 @@ function registerSpaceTools(server: McpServer, client: MyMindClient): void {
     if (dryRun === true) {
       return dryRunResult("mymind_remove_object_from_space", { spaceId, objectId });
     }
-    requireConfirmed(confirmWrite, "Removing object from space requires confirmation.");
+    requireLiteralConfirm(confirmWrite, "Removing object from space requires confirmation.");
     return jsonResult(await client.removeObjectFromSpace(spaceId, objectId));
   });
 }
@@ -409,15 +410,13 @@ function registerTagSearchConvertTools(server: McpServer, client: MyMindClient):
       confirmHighCost: z.literal(true).optional()
     },
     annotations: { readOnlyHint: true, openWorldHint: true }
-  }, async ({ confirmHighCost, dryRun, ...input }) => {
-    if (dryRun === true) {
-      return dryRunResult("mymind_search_objects", input);
-    }
-    if ((input.semantic || input.rerank) && confirmHighCost !== true) {
-      throw new Error("Semantic/rerank search can cost up to 250 credits. Set confirmHighCost=true.");
-    }
-    return jsonResult(await client.search(input));
-  });
+  },     async ({ confirmHighCost, dryRun, ...input }) => {
+      if (dryRun === true) {
+        return dryRunResult("mymind_search_objects", input);
+      }
+      requireHighCostSearchConfirm(confirmHighCost, input.semantic, input.rerank);
+      return jsonResult(await client.search(input));
+    });
 
   server.registerTool("mymind_convert_content", {
     title: "Convert content",
@@ -434,10 +433,4 @@ function registerTagSearchConvertTools(server: McpServer, client: MyMindClient):
     }
     return jsonResult(await client.convert({ content, from, to }));
   });
-}
-
-function requireConfirmed(value: unknown, message: string): void {
-  if (value !== true) {
-    throw new Error(message);
-  }
 }

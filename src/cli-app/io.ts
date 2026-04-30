@@ -1,18 +1,7 @@
 import { MyMindApiError } from "../mymind/client.js";
+import { Exit, exitCodeForApiError } from "../actions/errors.js";
 
-export const Exit = {
-  OK: 0,
-  GENERIC: 1,
-  USAGE: 2,
-  AUTH: 3,
-  NOT_FOUND: 4,
-  RATE_LIMIT: 5,
-  CONFIRM: 6,
-  DRY_RUN: 7,
-  UPSTREAM: 64,
-  SIGINT: 130,
-  SIGPIPE: 141
-} as const;
+export { Exit } from "../actions/errors.js";
 
 export function argvHas(flag: string): boolean {
   return process.argv.includes(flag);
@@ -55,14 +44,7 @@ export function printEnvelope(
 export function handleCliError(error: unknown): never {
   if (error instanceof MyMindApiError) {
     const api = error;
-    const code =
-      api.status === 401 || api.status === 403
-        ? Exit.AUTH
-        : api.status === 404
-          ? Exit.NOT_FOUND
-          : api.status === 429
-            ? Exit.RATE_LIMIT
-            : Exit.UPSTREAM;
+    const code = exitCodeForApiError(api);
     process.stderr.write(`${api.message}\n`);
     process.exit(code);
   }
