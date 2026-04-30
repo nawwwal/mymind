@@ -3,6 +3,7 @@ import { assertLikelyCssColor } from "../color-validation.js";
 import {
   handleCliError,
   printEnvelope,
+  printListEnvelope,
   requireConfirm,
   requireConfirmDelete,
   exitDryRun
@@ -16,7 +17,7 @@ const spacesLsCommand = defineCommand({
     try {
       await withClient(async (client) => {
         const result = await client.listSpaces();
-        printEnvelope("spaces.ls", result.data, result.rateLimit);
+        printListEnvelope("spaces.ls", result.data, result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);

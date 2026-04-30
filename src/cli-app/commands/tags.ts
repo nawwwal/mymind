@@ -1,5 +1,5 @@
 import { defineCommand } from "citty";
-import { handleCliError, printEnvelope } from "../io.js";
+import { handleCliError, printListEnvelope } from "../io.js";
 import { parseOptionalLimit } from "../limits.js";
 import { withClient } from "../run-client.js";
 
@@ -28,7 +28,7 @@ const tagsLsCommand = defineCommand({
         const flagQuery = parseTagFlag(args.flag as string | undefined);
         const query = { ...flagQuery, ...(limit !== undefined ? { limit } : {}) };
         const result = await client.listTags(query);
-        printEnvelope("tags.ls", result.data, result.rateLimit);
+        printListEnvelope("tags.ls", result.data, result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);

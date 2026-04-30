@@ -17,11 +17,13 @@ import {
 import { loadConfig } from "../config.js";
 import { InstallHelp, runInstallCommand } from "../install.js";
 import { runMcpStdioServer } from "../mcp-stdio.js";
+import { MyMindClient } from "../mymind/index.js";
+import { applyCliConfigFile } from "./config-file.js";
 import { objectsRootCommand, objectsGetCommand, runObjectsListShortcut } from "./commands/objects.js";
 import { spacesRootCommand } from "./commands/spaces.js";
 import { tagsRootCommand } from "./commands/tags.js";
 import { CLI_MANIFEST } from "./manifest-data.js";
-import { handleCliError, printEnvelope, requireConfirm, Exit } from "./io.js";
+import { decorateCreateResult, handleCliError, installProcessErrorHandlers, printEnvelope, printListEnvelope, requireConfirm, Exit } from "./io.js";
 import { parseOptionalLimit } from "./limits.js";
 import { SEARCH_SYNTAX_REFERENCE } from "./search-syntax.js";
 import { withClient } from "./run-client.js";
@@ -108,7 +110,7 @@ const searchCommand = defineCommand({
           semantic: args.semantic,
           rerank: args.rerank
         });
-        printEnvelope("search", result.data, result.rateLimit);
+        printListEnvelope("search", result.data, result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);
@@ -126,25 +128,31 @@ const loginCommand = defineCommand({
     secret: { type: "string", description: "Access key secret (base64)" },
     store: {
       type: "string",
-      description: "file (default) or keychain (macOS)",
-      valueHint: "file|keychain"
-    }
+      description: "file (default), keychain (macOS), or none (validate only)",
+      valueHint: "file|keychain|none"
+    },
+    profile: { type: "string", description: "Reserved profile name" }
   },
   async run({ args }) {
     try {
       const kid = args.kid ?? process.env.MYMIND_KID;
       const secret = args.secret ?? process.env.MYMIND_SECRET;
       if (!kid || !secret) throw new Error("Provide --kid and --secret or set MYMIND_KID and MYMIND_SECRET");
+      if (args.profile !== undefined) throw new Error("--profile is reserved for multi-profile support in v1.x.");
       const store = ((args.store as string | undefined) ?? "file").toLowerCase();
-      if (store !== "file" && store !== "keychain") {
-        throw new Error('Invalid --store (use file or keychain)');
+      if (store !== "file" && store !== "keychain" && store !== "none") {
+        throw new Error('Invalid --store (use file, keychain, or none)');
       }
+      const probeOptions: ConstructorParameters<typeof MyMindClient>[0] = { kid, secret, userAgent: "mymind-login" };
+      if (process.env.MYMIND_API_BASE !== undefined) probeOptions.apiBaseUrl = process.env.MYMIND_API_BASE;
+      const probe = new MyMindClient(probeOptions);
+      await probe.whoami();
       if (store === "keychain") {
         writeCredentialsToKeychain(kid, secret);
-      } else {
+      } else if (store === "file") {
         await writeCredentialsFile(kid, secret);
       }
-      printEnvelope("login", { saved: true, store }, {});
+      printEnvelope("login", { saved: store !== "none", store, lastValidatedAt: new Date().toISOString() }, {});
     } catch (error) {
       handleCliError(error);
     }
@@ -251,7 +259,7 @@ const saveCommand = defineCommand({
           url: args.url as string,
           title: args.title as string | undefined
         });
-        printEnvelope("save", { ...result.data, httpStatus: result.httpStatus }, result.rateLimit);
+        printEnvelope("save", decorateCreateResult(result.data as Record<string, unknown>, result.httpStatus), result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);
@@ -277,7 +285,7 @@ const noteCommand = defineCommand({
           title: args.title as string | undefined,
           content: { type: "text/markdown", body }
         });
-        printEnvelope("note", { ...result.data, httpStatus: result.httpStatus }, result.rateLimit);
+        printEnvelope("note", decorateCreateResult(result.data as Record<string, unknown>, result.httpStatus), result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);
@@ -303,7 +311,7 @@ const captureCommand = defineCommand({
         const result = await client.createObjectFromFile(uploadPath, {
           mimeType: args.mimeType as string | undefined
         });
-        printEnvelope("capture", { ...result.data, httpStatus: result.httpStatus }, result.rateLimit);
+        printEnvelope("capture", decorateCreateResult(result.data as Record<string, unknown>, result.httpStatus), result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);
@@ -316,6 +324,18 @@ export const rootCommand = defineCommand({
     name: "mymind",
     version: readPkgVersion(),
     description: "Unofficial CLI and MCP bridge for the mymind API"
+  },
+  args: {
+    verbose: { type: "boolean", alias: ["v"], description: "Verbose stderr logging" },
+    quiet: { type: "boolean", alias: ["q"], description: "Only errors on stderr" },
+    logFormat: { type: "string", alias: ["log-format"], description: "text or json stderr logs" },
+    noInput: { type: "boolean", alias: ["no-input"], description: "Never prompt interactively" },
+    retryMax: { type: "string", alias: ["retry-max"], description: "Max retries for retryable requests" },
+    noColor: { type: "boolean", alias: ["no-color"], description: "Disable color" },
+    config: { type: "string", description: "Path to config JSON" },
+    noConfig: { type: "boolean", alias: ["no-config"], description: "Skip config file" },
+    pager: { type: "boolean", description: "Reserved opt-in pager flag" },
+    profile: { type: "string", description: "Reserved for multi-profile support" }
   },
   subCommands: {
     search: searchCommand,
@@ -353,8 +373,31 @@ export const rootCommand = defineCommand({
 
 /** Entry for the citty CLI; `argv` should be `process.argv` (slice(2) is applied internally). */
 export function runCli(argv: string[] = process.argv): Promise<void> {
+  installProcessErrorHandlers();
+  const rawArgs = argv.slice(2);
+  if (rawArgs.includes("--help") && rawArgs.includes("--json")) {
+    const path = rawArgs.filter((arg) => !arg.startsWith("-"));
+    const entry = CLI_MANIFEST.commands.find((command) => command.path.join(" ") === path.join(" "));
+    process.stdout.write(`${JSON.stringify(entry ?? CLI_MANIFEST, null, 2)}\n`);
+    return Promise.resolve();
+  }
+  if (argv.includes("--profile")) {
+    process.stderr.write("Error: --profile is reserved for multi-profile support in v1.x.\n");
+    process.exit(Exit.USAGE);
+  }
+  const controller = new AbortController();
+  process.once("SIGINT", () => {
+    controller.abort(new Error("Interrupted."));
+    process.stderr.write("Cancelled\n");
+    process.exit(Exit.SIGINT);
+  });
+  process.once("SIGTERM", () => {
+    controller.abort(new Error("Terminated."));
+    process.stderr.write("Terminated\n");
+    process.exit(143);
+  });
   process.stdout.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EPIPE") process.exit(Exit.SIGPIPE);
   });
-  return runMain(rootCommand, { rawArgs: argv.slice(2) });
+  return applyCliConfigFile(argv).then(() => runMain(rootCommand, { rawArgs }));
 }

@@ -5,7 +5,9 @@ import type { ListOptions } from "../../mymind/client.js";
 import {
   exitDryRun,
   handleCliError,
+  decorateCreateResult,
   printEnvelope,
+  printListEnvelope,
   requireConfirm,
   requireConfirmDelete,
   requireConfirmReplace
@@ -61,8 +63,11 @@ async function runObjectsList(flags: {
       const out = filterObjectsBySince(data, ms);
       data = out.filtered;
       if (out.dropped > 0) warnings.push(`Filtered ${out.dropped} objects older than --since`);
+      if (Array.isArray(result.data) && Array.isArray(data) && data.length === 0 && out.dropped === result.data.length && limit !== undefined && result.data.length >= limit) {
+        warnings.push("The --since filter removed a full fetched page; use a narrower query or wait for server-side since support.");
+      }
     }
-    printEnvelope("objects.ls", data, result.rateLimit, warnings);
+    printListEnvelope("objects.ls", data, result.rateLimit, warnings);
   });
 }
 
@@ -142,7 +147,7 @@ const objectsCreateCommand = defineCommand({
             title: args.title as string | undefined,
             mimeType: args.mimeType as string | undefined
           });
-          printEnvelope("objects.create", { ...result.data, httpStatus: result.httpStatus }, result.rateLimit);
+          printEnvelope("objects.create", decorateCreateResult(result.data as Record<string, unknown>, result.httpStatus), result.rateLimit);
           return;
         }
         if (url) {
@@ -150,14 +155,14 @@ const objectsCreateCommand = defineCommand({
             url,
             title: args.title as string | undefined
           });
-          printEnvelope("objects.create", { ...result.data, httpStatus: result.httpStatus }, result.rateLimit);
+          printEnvelope("objects.create", decorateCreateResult(result.data as Record<string, unknown>, result.httpStatus), result.rateLimit);
           return;
         }
         const result = await client.createObject({
           title: args.title as string | undefined,
           content: { type: "text/markdown", body }
         });
-        printEnvelope("objects.create", { ...result.data, httpStatus: result.httpStatus }, result.rateLimit);
+        printEnvelope("objects.create", decorateCreateResult(result.data as Record<string, unknown>, result.httpStatus), result.rateLimit);
       });
     } catch (error) {
       handleCliError(error);
