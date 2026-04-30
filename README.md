@@ -8,7 +8,40 @@ The package is intended to run locally through `npx`, with mymind credentials su
 
 Requires Node.js 22 or newer.
 
-You do not need a global install. Your MCP client should run:
+You do not need a global install.
+
+### Automatic Installer
+
+The easiest path is the installer:
+
+```sh
+npx -y @nawwal/mymind-mcp install
+```
+
+It detects supported local MCP clients and configures whichever ones it finds:
+
+- Claude Code
+- Claude Desktop
+- Codex
+- Cursor
+
+Set credentials before running, or enter them when prompted:
+
+```sh
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp install
+```
+
+To target one client explicitly:
+
+```sh
+npx -y @nawwal/mymind-mcp install --clients=codex
+```
+
+Use `--dry-run` to see what would be configured without writing files.
+
+### Manual Command
+
+Your MCP client should run:
 
 ```sh
 npx -y @nawwal/mymind-mcp
@@ -41,6 +74,14 @@ The secrets are not typed into chat. They live in the MCP client's local config,
 See [docs/installation.md](docs/installation.md) for the full setup walkthrough.
 
 ## Client Configs
+
+The installer writes these configs for you when possible:
+
+```sh
+npx -y @nawwal/mymind-mcp install
+```
+
+Manual examples are below.
 
 ### Claude Desktop
 

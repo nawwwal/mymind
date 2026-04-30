@@ -1,5 +1,39 @@
 # Client Configs
 
+## Automatic Installer
+
+Run:
+
+```sh
+npx -y @nawwal/mymind-mcp install
+```
+
+The installer detects supported local MCP clients and configures whichever ones it finds:
+
+- Claude Code
+- Claude Desktop
+- Codex
+- Cursor
+
+Set credentials before running, or enter them when prompted:
+
+```sh
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp install
+```
+
+Useful options:
+
+```sh
+npx -y @nawwal/mymind-mcp install --dry-run
+npx -y @nawwal/mymind-mcp install --clients=codex
+npx -y @nawwal/mymind-mcp install --clients=claude-code,codex
+npx -y @nawwal/mymind-mcp install --clients=claude-code --scope=user
+```
+
+For non-interactive shells, set both credentials and pass `--yes`.
+
+## Manual Configs
+
 All clients should run the same command:
 
 ```sh
@@ -51,6 +85,20 @@ Common macOS path:
 Replace `your_key_id` and `your_secret` with the real values from mymind. Keep the surrounding JSON quotes.
 
 Restart Claude Desktop after saving the file.
+
+## Claude Code
+
+The installer uses the official Claude Code MCP command when `claude` is available:
+
+```sh
+claude mcp add mymind \
+  --scope user \
+  --env MYMIND_KID=your_key_id \
+  --env MYMIND_SECRET=your_secret \
+  -- npx -y @nawwal/mymind-mcp
+```
+
+Restart Claude Code after adding the server, or run `claude mcp list` to confirm it was added.
 
 ## Codex
 
