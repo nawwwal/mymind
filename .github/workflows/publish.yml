@@ -50,6 +50,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Show npm OIDC environment
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Workflow: ${{ github.workflow_ref }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "--- ~/.npmrc ---"
+          cat ~/.npmrc 2>/dev/null || echo "(no ~/.npmrc)"
+          echo "--- ./.npmrc ---"
+          cat .npmrc 2>/dev/null || echo "(no project .npmrc)"
+          echo "--- npm config registry ---"
+          npm config get registry
+          echo "--- npm config userconfig ---"
+          npm config get userconfig
+
       # prepublishOnly runs full verify (typecheck, tests, build, manifest/schemas drift, pack:check).
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: npm publish --access public --provenance --loglevel verbose
