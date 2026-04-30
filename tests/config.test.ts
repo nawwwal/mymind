@@ -28,7 +28,7 @@ describe("loadConfig", () => {
       kid: "kid",
       secret: "secret",
       apiBaseUrl: "https://api.mymind.com",
-      userAgent: "@nawwal/mymind/1.0.3",
+      userAgent: "@nawwal/mymind/1.0.4",
       allowedFileRoots: ["/tmp", "/Users/example"],
       outputDir: "/tmp/out",
       jwtValiditySeconds: DEFAULT_JWT_VALIDITY_SECONDS

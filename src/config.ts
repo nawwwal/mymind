@@ -60,7 +60,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     kid,
     secret,
     apiBaseUrl: env.MYMIND_API_BASE ?? "https://api.mymind.com",
-    userAgent: env.MYMIND_USER_AGENT ?? "@nawwal/mymind/1.0.3",
+    userAgent: env.MYMIND_USER_AGENT ?? "@nawwal/mymind/1.0.4",
     allowedFileRoots: splitPathList(env.MYMIND_ALLOWED_FILE_ROOTS),
     jwtValiditySeconds: jwtValiditySecondsFromEnv(env),
     outputDir: env.MYMIND_OUTPUT_DIR

@@ -174,7 +174,7 @@ export interface CreateObjectFromFileOptions extends ObjectCreateInput {
 
 const DEFAULT_API_BASE_URL = "https://api.mymind.com";
 
-const DEFAULT_USER_AGENT = "@nawwal/mymind/1.0.3";
+const DEFAULT_USER_AGENT = "@nawwal/mymind/1.0.4";
 
 /** Namespaced surface aligned with upstream `mymindcorp/api` client sketch. */
 export interface MyMindObjectsNamespace {
