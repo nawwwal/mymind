@@ -70,7 +70,7 @@ describe("package metadata", () => {
         expect.arrayContaining([
           "README.md",
           "LICENSE",
-          "docs/api-coverage.md",
+          "docs/coverage.md",
           "docs/client-configs.md",
           "docs/development.md",
           "docs/installation.md",

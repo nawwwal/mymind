@@ -1,8 +1,10 @@
-# @nawwal/mymind-mcp
+# @nawwal/mymind
 
-An unofficial, personal-use MCP server for connecting Claude, Codex, Cursor, and other MCP clients to the mymind API.
+Unofficial **CLI + MCP** bridge for the mymind API: use `mymind` from any terminal or CI, and `mymind-mcp` (stdio) from MCP hosts such as Claude Desktop, Codex, or Cursor.
 
-The package is intended to run locally through `npx`, with mymind credentials supplied as environment variables. It exposes MCP tools around the practical mymind API surface: objects, spaces, tags, entities, conversion, and search. The GitHub repository target is `github.com/nawwwal/mymind-mcp` and may be private even when the npm package is public.
+The package is intended to run through `npx` without a global install. Credentials come from environment variables and/or `mymind login` (see `~/.config/mymind/credentials.json`). It exposes the practical API surface: objects, spaces, tags, conversion, and search—not every undocumented endpoint variant.
+
+Repository: `github.com/nawwwal/mymind-mcp` (may stay private while the npm package is public).
 
 ## Installation
 
@@ -10,12 +12,21 @@ Requires Node.js 22 or newer.
 
 You do not need a global install.
 
+## CLI quick start
+
+```sh
+npx -y @nawwal/mymind search 'tag:reading' --json
+npx -y @nawwal/mymind objects ls --since 7d --limit 50
+```
+
+Credential file (after `mymind login`) works for both CLI and MCP. Agents: see [AGENTS.md](./AGENTS.md). Introspection: `npx -y @nawwal/mymind manifest`.
+
 ### Automatic Installer
 
 The easiest path is the installer:
 
 ```sh
-npx -y @nawwal/mymind-mcp install
+npx -y @nawwal/mymind install
 ```
 
 It detects supported local MCP clients and configures whichever ones it finds:
@@ -28,13 +39,13 @@ It detects supported local MCP clients and configures whichever ones it finds:
 Set credentials before running, or enter them when prompted:
 
 ```sh
-MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind-mcp install
+MYMIND_KID=your_key_id MYMIND_SECRET=your_secret npx -y @nawwal/mymind install
 ```
 
 To target one client explicitly:
 
 ```sh
-npx -y @nawwal/mymind-mcp install --clients=codex
+npx -y @nawwal/mymind install --clients=codex
 ```
 
 Use `--dry-run` to see what would be configured without writing files.
@@ -44,7 +55,7 @@ Use `--dry-run` to see what would be configured without writing files.
 Your MCP client should run:
 
 ```sh
-npx -y @nawwal/mymind-mcp
+npx -y @nawwal/mymind mcp
 ```
 
 Create or view a mymind access key at:
@@ -78,7 +89,7 @@ See [docs/installation.md](docs/installation.md) for the full setup walkthrough.
 The installer writes these configs for you when possible:
 
 ```sh
-npx -y @nawwal/mymind-mcp install
+npx -y @nawwal/mymind install
 ```
 
 Manual examples are below.
@@ -92,7 +103,7 @@ Add this to your Claude Desktop config file:
   "mcpServers": {
     "mymind": {
       "command": "npx",
-      "args": ["-y", "@nawwal/mymind-mcp"],
+      "args": ["-y", "@nawwal/mymind", "mcp"],
       "env": {
         "MYMIND_KID": "your_key_id",
         "MYMIND_SECRET": "your_secret"
@@ -109,7 +120,7 @@ Add this to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.mymind]
 command = "npx"
-args = ["-y", "@nawwal/mymind-mcp"]
+args = ["-y", "@nawwal/mymind", "mcp"]
 env = { MYMIND_KID = "your_key_id", MYMIND_SECRET = "your_secret" }
 ```
 
@@ -122,7 +133,7 @@ Add this to `.cursor/mcp.json` or your user-level Cursor MCP config:
   "mcpServers": {
     "mymind": {
       "command": "npx",
-      "args": ["-y", "@nawwal/mymind-mcp"],
+      "args": ["-y", "@nawwal/mymind", "mcp"],
       "env": {
         "MYMIND_KID": "your_key_id",
         "MYMIND_SECRET": "your_secret"
@@ -165,7 +176,7 @@ Reference-only API documentation:
 - `markdown-support`
 - `prose`
 
-See [docs/api-coverage.md](docs/api-coverage.md) for the complete coverage table.
+See [docs/coverage.md](docs/coverage.md) for the complete coverage table.
 
 ## Safety Notes
 
@@ -187,7 +198,7 @@ See [docs/safety.md](docs/safety.md) for more detail.
 
 - Restart the MCP client after changing config.
 - Confirm the config file path is the one your client actually reads.
-- Confirm the command is `npx` and the args are `["-y", "@nawwal/mymind-mcp"]`.
+- Confirm the command is `npx` and the args are `["-y", "@nawwal/mymind"]`.
 
 ### Authentication fails
 
@@ -197,13 +208,13 @@ See [docs/safety.md](docs/safety.md) for more detail.
 
 ### `npx` cannot find the package
 
-- Confirm the package name is exactly `@nawwal/mymind-mcp`.
+- Confirm the package name is exactly `@nawwal/mymind`.
 - Confirm your npm registry is `https://registry.npmjs.org/`.
-- Try `npm view @nawwal/mymind-mcp` to check registry visibility.
+- Try `npm view @nawwal/mymind` to check registry visibility.
 
 ### Tools fail for one content type
 
-- Check whether the content type is listed in [docs/api-coverage.md](docs/api-coverage.md).
+- Check whether the content type is listed in [docs/coverage.md](docs/coverage.md).
 - Some mymind documentation pages are reference-only for this server and do not imply an MCP tool exists.
 
 ## Development

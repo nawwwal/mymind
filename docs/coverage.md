@@ -1,8 +1,10 @@
-# API Coverage
+# Coverage
 
-This document tracks how the official mymind API documentation pages map to this MCP server.
+This document tracks how the official mymind API documentation pages map to this package (**MCP tools and the `mymind` CLI**).
 
-The server is an unofficial, personal-use bridge. "Covered" means this package exposes practical MCP tools for the page's main runtime behavior, not that every field, endpoint variant, quota rule, or account-plan behavior is guaranteed.
+The project is an unofficial, personal-use bridge. "Covered" means this package exposes practical tools or CLI verbs for the page's main runtime behavior, not that every field, endpoint variant, quota rule, or account-plan behavior is guaranteed.
+
+CLI surface: top-level shortcuts (`search`, `ls`, `get`, `save`, `note`, `capture`, …) plus `mymind objects|spaces|tags|…` mirror MCP tools. Run `mymind --help` for the full tree.
 
 Status meanings:
 
@@ -11,7 +13,7 @@ Status meanings:
 - `Reference-only`: the page informs implementation details, validation, or docs, but does not expose a dedicated MCP tool group.
 - `Known gap`: the page describes behavior that this package does not currently implement as user-facing MCP tools.
 
-| mymind API page | Status | MCP coverage |
+| mymind API page | Status | MCP / CLI coverage |
 | --- | --- | --- |
 | `api` | Reference-only | Establishes the API host, JSON conventions, user-agent expectation, and overall documentation index. No standalone MCP tool is exposed. |
 | `authentication` | Covered | Implemented by the client wrapper. Each request signs an HS256 JWT with `kid`, uppercase method, and request path, then sends it as a bearer token. |
@@ -21,7 +23,7 @@ Status meanings:
 | `objects` | Covered | Tools expose list, create from URL/content/file, get, update metadata, soft delete, restore, pin/unpin, related search, inline download, download-to-file, get text content, replace note content, add tags, and add spaces. |
 | `spaces` | Covered | Tools expose list, create, get, update, delete, add object, and remove object workflows. |
 | `tags` | Partially covered | Tools expose tag listing and adding tags to objects. Standalone tag lookup, editing, merging, or deletion are not exposed as MCP tools. |
-| `entities` | Partially covered | A read-only get-by-id tool is exposed. The upstream Entities page is treated as WIP/limited, so agents should not assume complete entity workflows. |
+| `entities` | Known gap | Not exposed: canonical spec dropped entities; there is no `mymind_get_entity` tool or CLI verb. |
 | `convert` | Partially covered | Tools convert among `text/plain`, `text/markdown`, and `application/prose+json`. Other formats are not exposed through the conversion tool. |
 | `search` | Covered | Search is exposed against the authenticated account. Semantic/rerank options require explicit high-cost confirmation. |
 | `types` | Reference-only | Used to understand shared response shapes and request fields. No standalone `types` tool group is exposed. |
