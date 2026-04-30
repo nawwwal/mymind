@@ -6,7 +6,6 @@ import {
   AnyResultSchema,
   ConvertResultSchema,
   EmptyObjectSchema,
-  EntitySchema,
   ObjectSchema,
   SearchResultSchema,
   SpaceSchema,
@@ -14,7 +13,6 @@ import {
 } from "./schemas.js";
 import type {
   MymindConvertResult,
-  MymindEntity,
   MymindObject,
   MymindSearchResult,
   MymindSpace,
@@ -57,6 +55,8 @@ export interface RateLimitPolicyEntry {
 export interface MyMindResponse<T> {
   data: T;
   rateLimit: MyMindRateLimitMetadata;
+  /** HTTP status from the successful response (e.g. 200 bumped vs 201 created). */
+  httpStatus?: number | undefined;
 }
 
 export interface MyMindRawResponse {
@@ -141,12 +141,12 @@ export interface SpaceUpdateInput {
 }
 
 export interface SearchInput {
-  q: string;
+  q?: string | undefined;
   limit?: number | undefined;
   semantic?: boolean | undefined;
   semanticBoost?: number | undefined;
   rerank?: boolean | undefined;
-  [key: string]: string | number | boolean | null | undefined | Array<string | number | boolean>;
+  similarTo?: string | undefined;
 }
 
 export interface ConvertInput {
@@ -162,7 +162,51 @@ export interface CreateObjectFromFileOptions extends ObjectCreateInput {
 }
 
 const DEFAULT_API_BASE_URL = "https://api.mymind.com";
-const DEFAULT_USER_AGENT = "@nawwal/mymind-mcp/0.1.0";
+const DEFAULT_USER_AGENT = "@nawwal/mymind/1.0.0";
+
+/** Namespaced surface aligned with upstream `mymindcorp/api` client sketch. */
+export interface MyMindObjectsNamespace {
+  list: (options?: ListOptions) => Promise<MyMindResponse<MymindObject[] | unknown>>;
+  get: (id: string) => Promise<MyMindResponse<MymindObject>>;
+  create: (input: ObjectCreateInput) => Promise<MyMindResponse<MymindObject>>;
+  createFromFile: (filePath: string, options?: CreateObjectFromFileOptions) => Promise<MyMindResponse<MymindObject>>;
+  update: (id: string, input: ObjectUpdateInput) => Promise<MyMindResponse<MymindObject>>;
+  delete: (id: string) => Promise<MyMindResponse<unknown>>;
+  restore: (id: string) => Promise<MyMindResponse<unknown>>;
+  findRelated: (id: string, options?: ListOptions) => Promise<MyMindResponse<unknown>>;
+  blob: (id: string) => Promise<MyMindResponse<unknown>>;
+  thumbnailRaw: (id: string, query?: { size?: string }) => Promise<MyMindRawResponse>;
+  content: (
+    id: string,
+    format: "text/markdown" | "application/prose+json" | "text/html"
+  ) => Promise<MyMindResponse<unknown>>;
+  replaceContent: (
+    id: string,
+    content: string | Record<string, unknown>,
+    contentType: "text/markdown" | "application/prose+json"
+  ) => Promise<MyMindResponse<unknown>>;
+  addTags: (
+    objectId: string,
+    tags: Array<{ name: string; flags?: number | undefined }>
+  ) => Promise<MyMindResponse<unknown>>;
+  addSpaces: (objectId: string, spaces: Array<{ id: string }>) => Promise<MyMindResponse<unknown>>;
+  pin: (id: string, position?: number) => Promise<MyMindResponse<unknown>>;
+  unpin: (id: string) => Promise<MyMindResponse<unknown>>;
+}
+
+export interface MyMindSpacesNamespace {
+  list: (options?: ListOptions) => Promise<MyMindResponse<MymindSpace[] | unknown>>;
+  get: (id: string) => Promise<MyMindResponse<MymindSpace>>;
+  create: (input: SpaceCreateInput) => Promise<MyMindResponse<MymindSpace>>;
+  update: (id: string, input: SpaceUpdateInput) => Promise<MyMindResponse<MymindSpace>>;
+  delete: (id: string) => Promise<MyMindResponse<unknown>>;
+  addObject: (spaceId: string, objectId: string) => Promise<MyMindResponse<unknown>>;
+  removeObject: (spaceId: string, objectId: string) => Promise<MyMindResponse<unknown>>;
+}
+
+export interface MyMindTagsNamespace {
+  list: (options?: ListOptions) => Promise<MyMindResponse<MymindTag[] | unknown>>;
+}
 
 export class MyMindClient {
   private readonly kid: string;
@@ -170,6 +214,10 @@ export class MyMindClient {
   private readonly apiBaseUrl: URL;
   private readonly userAgent: string;
   private readonly fetchImpl: typeof fetch;
+
+  readonly objects: MyMindObjectsNamespace;
+  readonly spaces: MyMindSpacesNamespace;
+  readonly tags: MyMindTagsNamespace;
 
   constructor(options: MyMindClientOptions) {
     if (!options.kid) {
@@ -185,6 +233,39 @@ export class MyMindClient {
     this.apiBaseUrl = new URL(options.apiBaseUrl ?? DEFAULT_API_BASE_URL);
     this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
     this.fetchImpl = options.fetch ?? fetch;
+
+    this.objects = {
+      list: (opts) => this.listObjects(opts),
+      get: (id) => this.getObject(id),
+      create: (input) => this.createObject(input),
+      createFromFile: (fp, opts) => this.createObjectFromFile(fp, opts ?? {}),
+      update: (id, input) => this.updateObject(id, input),
+      delete: (id) => this.deleteObject(id),
+      restore: (id) => this.restoreObject(id),
+      findRelated: (id, opts) => this.findRelatedObjects(id, opts),
+      blob: (id) => this.downloadObject(id),
+      thumbnailRaw: (id, q) => this.getObjectThumbnailRaw(id, q),
+      content: (id, format) => this.getObjectContent(id, format),
+      replaceContent: (id, content, contentType) => this.replaceObjectContent(id, content, contentType),
+      addTags: (objectId, tags) => this.addObjectTags(objectId, tags),
+      addSpaces: (objectId, spaces) => this.addObjectSpaces(objectId, spaces),
+      pin: (id, position) => this.pinObject(id, position),
+      unpin: (id) => this.unpinObject(id)
+    };
+
+    this.spaces = {
+      list: (opts) => this.listSpaces(opts),
+      get: (id) => this.getSpace(id),
+      create: (input) => this.createSpace(input),
+      update: (id, input) => this.updateSpace(id, input),
+      delete: (id) => this.deleteSpace(id),
+      addObject: (spaceId, objectId) => this.addObjectToSpace(spaceId, objectId),
+      removeObject: (spaceId, objectId) => this.removeObjectFromSpace(spaceId, objectId)
+    };
+
+    this.tags = {
+      list: (opts) => this.listTags(opts)
+    };
   }
 
   async request<T = unknown>(options: MyMindRequestOptions): Promise<MyMindResponse<T>> {
@@ -195,7 +276,8 @@ export class MyMindClient {
 
     return {
       data: parsedData as T,
-      rateLimit
+      rateLimit,
+      httpStatus: response.status
     };
   }
 
@@ -315,17 +397,24 @@ export class MyMindClient {
   }
 
   async findRelatedObjects(id: string, options?: ListOptions): Promise<MyMindResponse<unknown>> {
-    const request: MyMindRequestOptions = {
-      path: `/objects/${encodeURIComponent(id)}/related`,
-      schema: SearchResultSchema
-    };
-    if (options !== undefined) request.query = options;
-    return this.request(request);
+    return this.search({
+      similarTo: id,
+      limit: options?.limit,
+      semantic: true
+    });
+  }
+
+  async getObjectThumbnailRaw(id: string, query?: { size?: string }): Promise<MyMindRawResponse> {
+    return this.requestRaw({
+      path: `/objects/${encodeURIComponent(id)}/thumbnail`,
+      query: query?.size !== undefined ? { size: query.size } : undefined,
+      accept: "*/*"
+    });
   }
 
   async downloadObject(id: string): Promise<MyMindResponse<unknown>> {
     return this.request({
-      path: `/objects/${encodeURIComponent(id)}/download`,
+      path: `/objects/${encodeURIComponent(id)}/blob`,
       accept: "*/*",
       schema: AnyResultSchema
     });
@@ -468,17 +557,19 @@ export class MyMindClient {
     return this.request(request);
   }
 
-  async getEntity(id: string): Promise<MyMindResponse<MymindEntity>> {
-    return this.request({
-      path: `/entities/${encodeURIComponent(id)}`,
-      schema: EntitySchema
-    });
-  }
-
   async search(input: SearchInput): Promise<MyMindResponse<MymindSearchResult>> {
+    const q =
+      input.q !== undefined && input.q !== ""
+        ? input.q
+        : input.similarTo !== undefined
+          ? "*"
+          : undefined;
+    if (q === undefined) {
+      throw new Error("Search requires q or similarTo.");
+    }
     return this.request({
       path: "/search",
-      query: { ...input },
+      query: { ...input, q },
       schema: SearchResultSchema
     });
   }
