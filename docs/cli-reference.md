@@ -12,6 +12,8 @@ Generated from `src/cli-app/manifest-data.ts`. Regenerate with `npm run cli-refe
 | `save` | `write` | Create object from URL | `docs/output-schemas/envelope.schema.json` |
 | `note` | `write` | Create note from stdin | `docs/output-schemas/envelope.schema.json` |
 | `capture` | `write` | Upload file | `docs/output-schemas/envelope.schema.json` |
+| `tag` | `write` | Add tags to objects | `docs/output-schemas/envelope.schema.json` |
+| `move` | `write` | Add objects to a space | `docs/output-schemas/envelope.schema.json` |
 | `objects ls` | `read` | List objects | `docs/output-schemas/envelope.schema.json` |
 | `objects get` | `read` | Get object | `docs/output-schemas/envelope.schema.json` |
 | `objects create` | `write` | Create object (url, body, file) | `docs/output-schemas/envelope.schema.json` |
@@ -24,10 +26,7 @@ Generated from `src/cli-app/manifest-data.ts`. Regenerate with `npm run cli-refe
 | `objects content` | `read` | Fetch object content | `docs/output-schemas/envelope.schema.json` |
 | `objects replace` | `write` | Replace note content | `docs/output-schemas/envelope.schema.json` |
 | `objects related` | `read` | Related objects (high cost) | `docs/output-schemas/envelope.schema.json` |
-| `objects tag` | `write` | Add tags to objects | `docs/output-schemas/envelope.schema.json` |
-| `objects link-spaces` | `write` | Add objects to spaces | `docs/output-schemas/envelope.schema.json` |
 | `objects thumbnail` | `read` | Fetch thumbnail | `docs/output-schemas/envelope.schema.json` |
-| `objects search` | `read` | Search under objects namespace | `docs/output-schemas/envelope.schema.json` |
 | `spaces ls` | `read` | List spaces | `docs/output-schemas/envelope.schema.json` |
 | `spaces get` | `read` | Get space | `docs/output-schemas/envelope.schema.json` |
 | `spaces create` | `write` | Create space | `docs/output-schemas/envelope.schema.json` |

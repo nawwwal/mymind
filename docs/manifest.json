@@ -255,6 +255,90 @@
     },
     {
       "path": [
+        "tag"
+      ],
+      "summary": "Add tags to objects",
+      "tier": "write",
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "ids"
+      },
+      "stdout": {
+        "kind": "tag",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/tag.json"
+      ]
+    },
+    {
+      "path": [
+        "move"
+      ],
+      "summary": "Add objects to a space",
+      "tier": "write",
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "move",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/move.json"
+      ]
+    },
+    {
+      "path": [
         "objects",
         "ls"
       ],
@@ -768,92 +852,6 @@
     {
       "path": [
         "objects",
-        "tag"
-      ],
-      "summary": "Add tags to objects",
-      "tier": "write",
-      "needsConfirmCost": true,
-      "args": [],
-      "flags": [
-        {
-          "name": "--json",
-          "type": "boolean"
-        },
-        {
-          "name": "--ndjson",
-          "type": "boolean"
-        },
-        {
-          "name": "--compact",
-          "type": "boolean"
-        }
-      ],
-      "stdin": {
-        "accepts": "ids"
-      },
-      "stdout": {
-        "kind": "objects.tag",
-        "schemaRef": "docs/output-schemas/envelope.schema.json"
-      },
-      "exitCodes": [
-        0,
-        1,
-        3,
-        4,
-        5,
-        6,
-        64
-      ],
-      "examples": [
-        "docs/examples/objects.tag.json"
-      ]
-    },
-    {
-      "path": [
-        "objects",
-        "link-spaces"
-      ],
-      "summary": "Add objects to spaces",
-      "tier": "write",
-      "needsConfirmCost": true,
-      "args": [],
-      "flags": [
-        {
-          "name": "--json",
-          "type": "boolean"
-        },
-        {
-          "name": "--ndjson",
-          "type": "boolean"
-        },
-        {
-          "name": "--compact",
-          "type": "boolean"
-        }
-      ],
-      "stdin": {
-        "accepts": "none"
-      },
-      "stdout": {
-        "kind": "objects.link-spaces",
-        "schemaRef": "docs/output-schemas/envelope.schema.json"
-      },
-      "exitCodes": [
-        0,
-        1,
-        3,
-        4,
-        5,
-        6,
-        64
-      ],
-      "examples": [
-        "docs/examples/objects.link-spaces.json"
-      ]
-    },
-    {
-      "path": [
-        "objects",
         "thumbnail"
       ],
       "summary": "Fetch thumbnail",
@@ -891,48 +889,6 @@
       ],
       "examples": [
         "docs/examples/objects.thumbnail.json"
-      ]
-    },
-    {
-      "path": [
-        "objects",
-        "search"
-      ],
-      "summary": "Search under objects namespace",
-      "tier": "read",
-      "args": [],
-      "flags": [
-        {
-          "name": "--json",
-          "type": "boolean"
-        },
-        {
-          "name": "--ndjson",
-          "type": "boolean"
-        },
-        {
-          "name": "--compact",
-          "type": "boolean"
-        }
-      ],
-      "stdin": {
-        "accepts": "none"
-      },
-      "stdout": {
-        "kind": "objects.search",
-        "schemaRef": "docs/output-schemas/envelope.schema.json"
-      },
-      "exitCodes": [
-        0,
-        1,
-        3,
-        4,
-        5,
-        6,
-        64
-      ],
-      "examples": [
-        "docs/examples/objects.search.json"
       ]
     },
     {

@@ -14,7 +14,7 @@ mymind login --kid YOUR_KID --secret YOUR_SECRET
 ## High-signal commands
 
 ```sh
-mymind search 'tag:reading' --json
+mymind search --tag reading --json
 mymind objects ls --since 7d --json
 mymind get <object_uid> --json
 mymind save https://example.com/article --yes-cost --json
@@ -27,7 +27,7 @@ All JSON outputs use `{ "v": 1, "kind": "...", "data": ..., "rateLimit": ..., "w
 
 ```sh
 mymind manifest
-mymind search --syntax
+mymind help search
 ```
 
 ## MCP (hosts)

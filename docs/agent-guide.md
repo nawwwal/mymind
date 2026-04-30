@@ -30,7 +30,7 @@ pbpaste | mymind note --title "$(date +%F) standup" --yes-cost --json
 ### Auto-tag last week
 
 ```sh
-mymind objects ls --since 7d --json | jq -r '.data[].id' | mymind objects tag --tag review --yes --ndjson
+mymind objects ls --since 7d --json | jq -r '.data[].id' | mymind tag --tag review --yes --ndjson
 ```
 
 ### Search-and-summarize loop

@@ -10,7 +10,7 @@
 Both surfaces share the same action core, credential resolution, and safety model.
 
 ```sh
-mymind search 'tag:reading' --json
+mymind search --tag reading --json
 mymind mcp
 ```
 

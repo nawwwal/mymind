@@ -1,5 +1,5 @@
 {
-  "argv": ["search", "tag:reading", "--json"],
+  "argv": ["search", "--tag", "reading", "--json"],
   "expectedExitCode": 0,
   "expectedEnvelopeKind": "search"
 }

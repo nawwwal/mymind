@@ -22,8 +22,6 @@ npm install -g @nawwal/mymind
 mymind --help
 ```
 
-`npx -y @nawwal/mymind ...` is still useful for a one-off smoke test, but it is not the normal access pattern.
-
 **3 — Log in once**
 
 Recommended (default: `~/.config/mymind/credentials.json`; macOS can use Keychain):
@@ -45,7 +43,7 @@ export MYMIND_SECRET=YOUR_SECRET
 ```sh
 mymind auth status --json
 # or
-mymind search 'tag:reading' --json
+mymind search --tag reading --json
 ```
 
 Agents and automation should rely on **`--json`**, stable **exit codes**, and the **`manifest`** output — see [AGENTS.md](AGENTS.md) and [docs/agent-guide.md](docs/agent-guide.md).
@@ -55,7 +53,7 @@ Agents and automation should rely on **`--json`**, stable **exit codes**, and th
 ## Everyday CLI commands
 
 ```sh
-mymind search 'tag:reading' --json
+mymind search --tag reading --json
 mymind objects ls --since 7d --limit 50 --json
 mymind get <object_uid> --json
 ```
