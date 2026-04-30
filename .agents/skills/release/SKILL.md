@@ -1,5 +1,5 @@
 ---
-name: npm-release-workflow
+name: release
 description: >-
   Cuts an npm release for @nawwal/mymind via GitHub Actions Trusted Publisher:
   version bump, verify, tag, and published GitHub Release. Use when the user
@@ -7,7 +7,7 @@ description: >-
   workflow.
 ---
 
-# npm release workflow (`@nawwal/mymind`)
+# Release (`@nawwal/mymind`)
 
 ## Preconditions
 
