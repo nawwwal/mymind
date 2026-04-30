@@ -15,7 +15,8 @@
   },
   "homepage": "https://github.com/nawwwal/mymind-mcp#readme",
   "bin": {
-    "mymind-mcp": "./dist/cli.js"
+    "mymind-mcp": "./dist/cli.js",
+    "mymind": "./dist/bin/cli.js"
   },
   "files": [
     "dist",
@@ -31,8 +32,8 @@
     "access": "public"
   },
   "scripts": {
-    "dev": "tsx src/cli.ts",
-    "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean --target node22 --out-dir dist --splitting false",
+    "dev": "tsx src/bin/cli.ts",
+    "build": "tsup src/index.ts src/cli.ts src/bin/cli.ts src/bin/mcp.ts --format esm --dts --clean --target node22 --out-dir dist --splitting false",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
