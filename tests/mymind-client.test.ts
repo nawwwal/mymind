@@ -149,15 +149,15 @@ describe("MyMindClient", () => {
       call: (client) => client.findRelatedObjects("obj 1", { limit: 3 }),
       response: jsonResponse([]),
       method: "GET",
-      path: "/objects/obj%201/related",
-      query: { limit: ["3"] }
+      path: "/search",
+      query: { limit: ["3"], q: ["*"], semantic: ["true"], similarTo: ["obj 1"] }
     },
     {
       name: "object download",
       call: (client) => client.downloadObject("obj 1"),
       response: textResponse("download"),
       method: "GET",
-      path: "/objects/obj%201/download",
+      path: "/objects/obj%201/blob",
       accept: "*/*"
     },
     {
@@ -261,13 +261,6 @@ describe("MyMindClient", () => {
       method: "GET",
       path: "/tags",
       query: { limit: ["5"] }
-    },
-    {
-      name: "entity get",
-      call: (client) => client.getEntity("ent 1"),
-      response: jsonResponse({ id: "ent_1", type: "person" }),
-      method: "GET",
-      path: "/entities/ent%201"
     },
     {
       name: "search GET query",

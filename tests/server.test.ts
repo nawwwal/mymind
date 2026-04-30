@@ -45,7 +45,6 @@ describe("createMymindMcpServer", () => {
         "mymind_delete_space",
         "mymind_download_object",
         "mymind_find_related_objects",
-        "mymind_get_entity",
         "mymind_get_object",
         "mymind_get_object_content",
         "mymind_get_space",
@@ -66,7 +65,6 @@ describe("createMymindMcpServer", () => {
         "mymind://tags"
       ]);
       expect(resourceTemplates.resourceTemplates.map((resource) => resource.uriTemplate).sort()).toEqual([
-        "mymind://entities/{id}",
         "mymind://objects/{id}",
         "mymind://objects/{id}/content/{format}",
         "mymind://spaces/{id}"

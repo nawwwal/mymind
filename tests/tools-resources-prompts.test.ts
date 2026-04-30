@@ -255,7 +255,6 @@ function createClient(overrides: Record<string, unknown> = {}): MyMindClient {
     listSpaces: async () => response([]),
     getSpace: async () => response({ id: "space_1" }),
     listTags: async () => response([]),
-    getEntity: async () => response({ id: "entity_1" }),
     ...overrides
   } as unknown as MyMindClient;
 }
