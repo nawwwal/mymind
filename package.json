@@ -40,7 +40,12 @@
     "test:coverage": "vitest run --coverage",
     "pack:check": "node scripts/pack-check.mjs",
     "manifest": "tsx scripts/build-manifest.ts",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run manifest && git diff --exit-code docs/manifest.json && npm run pack:check",
+    "schemas": "tsx scripts/build-json-schemas.ts",
+    "output-schemas": "tsx scripts/build-output-schemas.ts",
+    "cli-reference": "tsx scripts/build-cli-reference.ts",
+    "lint:renames": "node scripts/lint-renames.mjs",
+    "lint:api-feedback": "node scripts/lint-api-feedback.mjs",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run manifest && npm run schemas && npm run output-schemas && npm run cli-reference && git diff --exit-code docs/manifest.json docs/schemas docs/output-schemas docs/examples docs/cli-reference.md && npm run lint:renames && npm run lint:api-feedback && npm run pack:check",
     "prepublishOnly": "npm run verify"
   },
   "keywords": [
@@ -67,6 +72,8 @@
   "devDependencies": {
     "@types/node": "^24.12.2",
     "@vitest/coverage-v8": "^3.2.4",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",

@@ -1,5 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import {
+  organizeMymindObjectPromptArgsSchema,
+  saveToMymindPromptArgsSchema,
+  searchMymindPromptArgsSchema,
+  summarizeMymindObjectPromptArgsSchema
+} from "../schemas/prompt-args.js";
 
 export function registerMymindPrompts(server: McpServer): void {
   server.registerPrompt(
@@ -7,10 +12,7 @@ export function registerMymindPrompts(server: McpServer): void {
     {
       title: "Search MyMind",
       description: "Turn a recall request into a MyMind search and synthesis workflow.",
-      argsSchema: {
-        query: z.string().describe("What to recall from MyMind."),
-        useSemantic: z.string().optional().describe("Set to true when semantic search is useful.")
-      }
+      argsSchema: searchMymindPromptArgsSchema.shape
     },
     ({ query, useSemantic }) => ({
       messages: [
@@ -30,10 +32,7 @@ export function registerMymindPrompts(server: McpServer): void {
     {
       title: "Summarize MyMind object",
       description: "Fetch and summarize one saved object.",
-      argsSchema: {
-        id: z.string().describe("MyMind object ID."),
-        format: z.string().optional().describe("markdown, html, or prose.")
-      }
+      argsSchema: summarizeMymindObjectPromptArgsSchema.shape
     },
     ({ id, format }) => ({
       messages: [
@@ -53,10 +52,7 @@ export function registerMymindPrompts(server: McpServer): void {
     {
       title: "Save to MyMind",
       description: "Prepare a safe create-object call.",
-      argsSchema: {
-        source: z.string().describe("URL or note content to save."),
-        kind: z.string().describe("url or note.")
-      }
+      argsSchema: saveToMymindPromptArgsSchema.shape
     },
     ({ source, kind }) => ({
       messages: [
@@ -76,9 +72,7 @@ export function registerMymindPrompts(server: McpServer): void {
     {
       title: "Organize MyMind object",
       description: "Suggest tags/spaces before mutating MyMind.",
-      argsSchema: {
-        id: z.string().describe("Object ID to organize.")
-      }
+      argsSchema: organizeMymindObjectPromptArgsSchema.shape
     },
     ({ id }) => ({
       messages: [

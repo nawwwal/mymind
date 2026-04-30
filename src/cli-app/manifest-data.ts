@@ -1,30 +1,8 @@
-/** MCP tool names exposed by the server (keep in sync with `src/tools/index.ts`). */
-export const MCP_TOOL_NAMES = [
-  "mymind_list_objects",
-  "mymind_create_object",
-  "mymind_get_object",
-  "mymind_find_related_objects",
-  "mymind_download_object",
-  "mymind_get_object_content",
-  "mymind_update_object",
-  "mymind_replace_note_content",
-  "mymind_add_object_tags",
-  "mymind_add_object_spaces",
-  "mymind_pin_object",
-  "mymind_unpin_object",
-  "mymind_delete_object",
-  "mymind_restore_object",
-  "mymind_create_space",
-  "mymind_get_space",
-  "mymind_list_spaces",
-  "mymind_update_space",
-  "mymind_delete_space",
-  "mymind_add_object_to_space",
-  "mymind_remove_object_from_space",
-  "mymind_list_tags",
-  "mymind_search_objects",
-  "mymind_convert_content"
-] as const;
+import type { MymindToolName } from "../tools/tool-input-schemas.js";
+import { MYMIND_TOOL_NAMES_ORDERED } from "../tools/tool-input-schemas.js";
+
+/** MCP tool names (same order as `MYMIND_TOOL_NAMES_ORDERED` / `MYMIND_TOOL_INPUT_SCHEMAS`). */
+export const MCP_TOOL_NAMES: readonly MymindToolName[] = MYMIND_TOOL_NAMES_ORDERED;
 
 /** CLI exit codes (`src/actions/errors.ts`); mirrored here for agent manifests. */
 export const CLI_EXIT_CODES = {
@@ -53,13 +31,49 @@ export const CLI_ENV_VARS = [
   { name: "XDG_CONFIG_HOME", summary: "Overrides config dir for ~/.config/mymind/credentials.json" }
 ] as const;
 
+export const CLI_ERROR_CODES = [
+  { code: "AUTH_INVALID", exitCode: CLI_EXIT_CODES.AUTH, hint: "Run `mymind login` or set MYMIND_KID and MYMIND_SECRET." },
+  { code: "NOT_FOUND", exitCode: CLI_EXIT_CODES.NOT_FOUND, hint: "Check the id and try again." },
+  { code: "RATE_LIMITED", exitCode: CLI_EXIT_CODES.RATE_LIMIT, hint: "Wait for the retry window or reduce high-cost calls." },
+  { code: "UPSTREAM_ERROR", exitCode: CLI_EXIT_CODES.UPSTREAM, hint: "The mymind API returned an unexpected error." },
+  { code: "GENERIC_ERROR", exitCode: CLI_EXIT_CODES.GENERIC, hint: "Run with --verbose for more context." }
+] as const;
+
+type CommandEntry = {
+  path: string[];
+  summary: string;
+  tier: string;
+  needsConfirmCost?: true;
+};
+
+function outputKind(path: readonly string[]): string {
+  return path.join(".");
+}
+
+function enrichCommands(commands: CommandEntry[]) {
+  return commands.map((command) => ({
+    ...command,
+    args: [],
+    flags: [
+      { name: "--json", type: "boolean" },
+      { name: "--ndjson", type: "boolean" },
+      { name: "--compact", type: "boolean" }
+    ],
+    stdin: { accepts: command.path.includes("tag") || command.path.includes("rm") ? "ids" : "none" },
+    stdout: { kind: outputKind(command.path), schemaRef: "docs/output-schemas/envelope.schema.json" },
+    exitCodes: [0, 1, 3, 4, 5, 6, 64],
+    examples: [`docs/examples/${outputKind(command.path)}.json`],
+    mcpEquivalent: command.path[0] === "objects" ? undefined : undefined
+  }));
+}
+
 /** Minimal manifest for agents; extend as verbs stabilize. */
 export const CLI_MANIFEST = {
   v: 1,
   schemaVersion: 1,
   name: "mymind",
   description: "CLI and MCP bridge for the unofficial mymind API",
-  commands: [
+  commands: enrichCommands([
     { path: ["search"], summary: "Search mymind", tier: "read" },
     { path: ["ls"], summary: "List objects (shortcut)", tier: "read" },
     { path: ["get"], summary: "Get object (shortcut)", tier: "read" },
@@ -98,8 +112,13 @@ export const CLI_MANIFEST = {
     { path: ["install"], summary: "Configure MCP clients", tier: "setup" },
     { path: ["mcp"], summary: "Start MCP stdio server", tier: "setup" },
     { path: ["manifest"], summary: "Print machine-readable CLI manifest", tier: "setup" }
-  ],
+  ]),
   mcpTools: [...MCP_TOOL_NAMES],
   exitCodes: CLI_EXIT_CODES,
-  envVars: [...CLI_ENV_VARS]
+  errorCodes: [...CLI_ERROR_CODES],
+  envVars: [...CLI_ENV_VARS],
+  outputSchemas: {
+    envelope: "docs/output-schemas/envelope.schema.json",
+    compact: "docs/output-schemas/compact.schema.json"
+  }
 } as const;

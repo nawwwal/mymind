@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { z } from "zod";
 import { describe, expect, it } from "vitest";
 import type { MymindMcpConfig } from "../src/config.js";
 import type { MyMindClient, MyMindResponse } from "../src/mymind/index.js";
@@ -34,11 +35,12 @@ describe("MCP tools, resources, and prompts", () => {
     });
 
     const download = registry.tools.get("mymind_download_object");
+    const downloadSchema = download?.config.inputSchema as z.ZodObject<Record<string, z.ZodTypeAny>>;
 
     expect(download?.config.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
-    expect(download?.config.inputSchema).toHaveProperty("outputFilename");
-    expect(download?.config.inputSchema).toHaveProperty("confirmWrite");
-    expect(download?.config.inputSchema).toHaveProperty("dryRun");
+    expect(downloadSchema.shape).toHaveProperty("outputFilename");
+    expect(downloadSchema.shape).toHaveProperty("confirmWrite");
+    expect(downloadSchema.shape).toHaveProperty("dryRun");
   });
 
   it("returns structuredContent for JSON-compatible tool results", async () => {

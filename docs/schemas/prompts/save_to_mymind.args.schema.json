@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "description": "URL or note content to save."
+    },
+    "kind": {
+      "type": "string",
+      "description": "url or note."
+    }
+  },
+  "required": [
+    "source",
+    "kind"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

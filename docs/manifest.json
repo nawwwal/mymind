@@ -9,21 +9,123 @@
         "search"
       ],
       "summary": "Search mymind",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "search",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/search.json"
+      ]
     },
     {
       "path": [
         "ls"
       ],
       "summary": "List objects (shortcut)",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "ls",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/ls.json"
+      ]
     },
     {
       "path": [
         "get"
       ],
       "summary": "Get object (shortcut)",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "get",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/get.json"
+      ]
     },
     {
       "path": [
@@ -31,7 +133,41 @@
       ],
       "summary": "Create object from URL",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "save",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/save.json"
+      ]
     },
     {
       "path": [
@@ -39,7 +175,41 @@
       ],
       "summary": "Create note from stdin",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "note",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/note.json"
+      ]
     },
     {
       "path": [
@@ -47,7 +217,41 @@
       ],
       "summary": "Upload file",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "capture",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/capture.json"
+      ]
     },
     {
       "path": [
@@ -55,7 +259,41 @@
         "ls"
       ],
       "summary": "List objects",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.ls",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.ls.json"
+      ]
     },
     {
       "path": [
@@ -63,7 +301,41 @@
         "get"
       ],
       "summary": "Get object",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.get",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.get.json"
+      ]
     },
     {
       "path": [
@@ -72,7 +344,41 @@
       ],
       "summary": "Create object (url, body, file)",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.create",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.create.json"
+      ]
     },
     {
       "path": [
@@ -81,7 +387,41 @@
       ],
       "summary": "Update object metadata",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.update",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.update.json"
+      ]
     },
     {
       "path": [
@@ -90,7 +430,41 @@
       ],
       "summary": "Soft-delete objects",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "ids"
+      },
+      "stdout": {
+        "kind": "objects.rm",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.rm.json"
+      ]
     },
     {
       "path": [
@@ -99,7 +473,41 @@
       ],
       "summary": "Restore soft-deleted objects",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.restore",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.restore.json"
+      ]
     },
     {
       "path": [
@@ -108,7 +516,41 @@
       ],
       "summary": "Pin objects",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.pin",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.pin.json"
+      ]
     },
     {
       "path": [
@@ -117,7 +559,41 @@
       ],
       "summary": "Unpin objects",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.unpin",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.unpin.json"
+      ]
     },
     {
       "path": [
@@ -125,7 +601,41 @@
         "download"
       ],
       "summary": "Download object blob",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.download",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.download.json"
+      ]
     },
     {
       "path": [
@@ -133,7 +643,41 @@
         "content"
       ],
       "summary": "Fetch object content",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.content",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.content.json"
+      ]
     },
     {
       "path": [
@@ -142,7 +686,41 @@
       ],
       "summary": "Replace note content",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.replace",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.replace.json"
+      ]
     },
     {
       "path": [
@@ -151,7 +729,41 @@
       ],
       "summary": "Related objects (high cost)",
       "tier": "read",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.related",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.related.json"
+      ]
     },
     {
       "path": [
@@ -160,7 +772,41 @@
       ],
       "summary": "Add tags to objects",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "ids"
+      },
+      "stdout": {
+        "kind": "objects.tag",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.tag.json"
+      ]
     },
     {
       "path": [
@@ -169,7 +815,41 @@
       ],
       "summary": "Add objects to spaces",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.link-spaces",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.link-spaces.json"
+      ]
     },
     {
       "path": [
@@ -177,7 +857,41 @@
         "thumbnail"
       ],
       "summary": "Fetch thumbnail",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.thumbnail",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.thumbnail.json"
+      ]
     },
     {
       "path": [
@@ -185,7 +899,41 @@
         "search"
       ],
       "summary": "Search under objects namespace",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "objects.search",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/objects.search.json"
+      ]
     },
     {
       "path": [
@@ -193,7 +941,41 @@
         "ls"
       ],
       "summary": "List spaces",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "spaces.ls",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.ls.json"
+      ]
     },
     {
       "path": [
@@ -201,7 +983,41 @@
         "get"
       ],
       "summary": "Get space",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "spaces.get",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.get.json"
+      ]
     },
     {
       "path": [
@@ -210,7 +1026,41 @@
       ],
       "summary": "Create space",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "spaces.create",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.create.json"
+      ]
     },
     {
       "path": [
@@ -219,7 +1069,41 @@
       ],
       "summary": "Update space",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "spaces.update",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.update.json"
+      ]
     },
     {
       "path": [
@@ -228,7 +1112,41 @@
       ],
       "summary": "Delete space shell",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "ids"
+      },
+      "stdout": {
+        "kind": "spaces.rm",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.rm.json"
+      ]
     },
     {
       "path": [
@@ -237,7 +1155,41 @@
       ],
       "summary": "Add object to space",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "spaces.add",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.add.json"
+      ]
     },
     {
       "path": [
@@ -246,7 +1198,41 @@
       ],
       "summary": "Remove object from space",
       "tier": "write",
-      "needsConfirmCost": true
+      "needsConfirmCost": true,
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "spaces.remove",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/spaces.remove.json"
+      ]
     },
     {
       "path": [
@@ -254,28 +1240,164 @@
         "ls"
       ],
       "summary": "List tags",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "tags.ls",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/tags.ls.json"
+      ]
     },
     {
       "path": [
         "convert"
       ],
       "summary": "Convert content",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "convert",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/convert.json"
+      ]
     },
     {
       "path": [
         "login"
       ],
       "summary": "Save credentials (file or macOS keychain)",
-      "tier": "auth"
+      "tier": "auth",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "login",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/login.json"
+      ]
     },
     {
       "path": [
         "logout"
       ],
       "summary": "Remove saved credentials (file + keychain)",
-      "tier": "auth"
+      "tier": "auth",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "logout",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/logout.json"
+      ]
     },
     {
       "path": [
@@ -283,35 +1405,205 @@
         "status"
       ],
       "summary": "Credential layers (env / file / keychain)",
-      "tier": "auth"
+      "tier": "auth",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "auth.status",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/auth.status.json"
+      ]
     },
     {
       "path": [
         "whoami"
       ],
       "summary": "Show active kid / resolution source",
-      "tier": "read"
+      "tier": "read",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "whoami",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/whoami.json"
+      ]
     },
     {
       "path": [
         "install"
       ],
       "summary": "Configure MCP clients",
-      "tier": "setup"
+      "tier": "setup",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "install",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/install.json"
+      ]
     },
     {
       "path": [
         "mcp"
       ],
       "summary": "Start MCP stdio server",
-      "tier": "setup"
+      "tier": "setup",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "mcp",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/mcp.json"
+      ]
     },
     {
       "path": [
         "manifest"
       ],
       "summary": "Print machine-readable CLI manifest",
-      "tier": "setup"
+      "tier": "setup",
+      "args": [],
+      "flags": [
+        {
+          "name": "--json",
+          "type": "boolean"
+        },
+        {
+          "name": "--ndjson",
+          "type": "boolean"
+        },
+        {
+          "name": "--compact",
+          "type": "boolean"
+        }
+      ],
+      "stdin": {
+        "accepts": "none"
+      },
+      "stdout": {
+        "kind": "manifest",
+        "schemaRef": "docs/output-schemas/envelope.schema.json"
+      },
+      "exitCodes": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        64
+      ],
+      "examples": [
+        "docs/examples/manifest.json"
+      ]
     }
   ],
   "mcpTools": [
@@ -353,6 +1645,33 @@
     "SIGINT": 130,
     "SIGPIPE": 141
   },
+  "errorCodes": [
+    {
+      "code": "AUTH_INVALID",
+      "exitCode": 3,
+      "hint": "Run `mymind login` or set MYMIND_KID and MYMIND_SECRET."
+    },
+    {
+      "code": "NOT_FOUND",
+      "exitCode": 4,
+      "hint": "Check the id and try again."
+    },
+    {
+      "code": "RATE_LIMITED",
+      "exitCode": 5,
+      "hint": "Wait for the retry window or reduce high-cost calls."
+    },
+    {
+      "code": "UPSTREAM_ERROR",
+      "exitCode": 64,
+      "hint": "The mymind API returned an unexpected error."
+    },
+    {
+      "code": "GENERIC_ERROR",
+      "exitCode": 1,
+      "hint": "Run with --verbose for more context."
+    }
+  ],
   "envVars": [
     {
       "name": "MYMIND_KID",
@@ -391,5 +1710,9 @@
       "summary": "Overrides config dir for ~/.config/mymind/credentials.json"
     }
   ],
+  "outputSchemas": {
+    "envelope": "docs/output-schemas/envelope.schema.json",
+    "compact": "docs/output-schemas/compact.schema.json"
+  },
   "version": "1.0.0"
 }

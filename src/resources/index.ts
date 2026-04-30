@@ -1,15 +1,11 @@
 import { ResourceTemplate, type McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { ZodType, ZodTypeAny } from "zod";
 import type { MyMindClient } from "../mymind/index.js";
+import { resourceContentFormatSchema, resourceIdSchema } from "../schemas/resource-variables.js";
 
 interface ResourceDependencies {
   client: MyMindClient;
 }
-
-const resourceId = z.string().min(1).refine((value) => !/[/?#]/.test(value), {
-  message: "Resource IDs must not contain URI path, query, or fragment separators."
-});
-const resourceContentFormat = z.enum(["markdown", "html", "prose"]);
 
 export function registerMymindResources(server: McpServer, { client }: ResourceDependencies): void {
   server.registerResource(
@@ -39,7 +35,7 @@ export function registerMymindResources(server: McpServer, { client }: ResourceD
     async (uri, variables) => {
       assertResourceUri(uri, "objects");
       const id = firstVariable(variables.id, "id");
-      const format = firstVariable(variables.format, "format", resourceContentFormat);
+      const format = firstVariable(variables.format, "format", resourceContentFormatSchema);
       const accept = formatToAccept(format);
       const result = await client.getObjectContent(id, accept);
       return {
@@ -110,11 +106,11 @@ function jsonResource(uri: string, data: unknown) {
 }
 
 function firstVariable(value: string | string[] | undefined, name: string): string;
-function firstVariable<T>(value: string | string[] | undefined, name: string, schema: z.ZodType<T>): T;
+function firstVariable<T>(value: string | string[] | undefined, name: string, schema: ZodType<T>): T;
 function firstVariable(
   value: string | string[] | undefined,
   name: string,
-  schema: z.ZodTypeAny = resourceId
+  schema: ZodTypeAny = resourceIdSchema
 ): unknown {
   const first = Array.isArray(value) ? value[0] : value;
   const parsed = schema.safeParse(first);

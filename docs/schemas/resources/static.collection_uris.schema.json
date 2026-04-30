@@ -1,0 +1,8 @@
+{
+  "type": "string",
+  "enum": [
+    "mymind://spaces",
+    "mymind://tags"
+  ],
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,5 @@
+{
+  "argv": ["objects", "ls", "--limit", "10", "--json"],
+  "expectedExitCode": 0,
+  "expectedEnvelopeKind": "objects.ls"
+}

@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "content": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      ]
+    },
+    "from": {
+      "type": "string",
+      "enum": [
+        "text/plain",
+        "text/markdown",
+        "application/prose+json"
+      ]
+    },
+    "to": {
+      "type": "string",
+      "enum": [
+        "text/plain",
+        "text/markdown",
+        "application/prose+json"
+      ]
+    }
+  },
+  "required": [
+    "content",
+    "from",
+    "to"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
