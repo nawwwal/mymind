@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const config = loadConfig();
+  const config = await loadConfig();
   const server = createMymindMcpServer({ config });
   const transport = new StdioServerTransport();
   await server.connect(transport);
