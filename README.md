@@ -8,18 +8,24 @@ The package is intended to run locally through `npx`, with mymind credentials su
 
 Requires Node.js 22 or newer.
 
-You do not need a global install. Configure your MCP client to run:
+You do not need a global install. Your MCP client should run:
 
 ```sh
 npx -y @nawwal/mymind-mcp
 ```
 
-Required environment variables:
+Create or view a mymind access key at:
 
-```sh
-MYMIND_KID=your_key_id
-MYMIND_SECRET=your_secret
+```text
+https://access.mymind.com/extensions
 ```
+
+Then put the two access-key values into your MCP client config:
+
+| Environment variable | Paste this value |
+| --- | --- |
+| `MYMIND_KID` | The mymind access-key id / kid. This is not a user id. |
+| `MYMIND_SECRET` | The matching mymind access-key secret. Treat it like a password. |
 
 Optional environment variables:
 
@@ -29,6 +35,10 @@ Optional environment variables:
 - `MYMIND_OUTPUT_DIR`: directory for downloaded or generated output.
 
 Keep these values out of source control, screenshots, shared logs, and model-visible prompts.
+
+The secrets are not typed into chat. They live in the MCP client's local config, and the client passes them to the local `mymind-mcp` process as environment variables when it starts the server.
+
+See [docs/installation.md](docs/installation.md) for the full setup walkthrough.
 
 ## Client Configs
 
@@ -82,6 +92,14 @@ Add this to `.cursor/mcp.json` or your user-level Cursor MCP config:
 ```
 
 Restart the client after editing its MCP config.
+
+After restart, test with a narrow read-only request first:
+
+```text
+Search my mymind for "receipt" and show the top 3 result titles only.
+```
+
+If your client asks to run a `mymind_*` tool, the server is installed and credentials are being passed correctly.
 
 ## API Coverage
 
