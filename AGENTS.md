@@ -5,19 +5,20 @@
 ## Install & credentials
 
 ```sh
-npx -y @nawwal/mymind login --kid YOUR_KID --secret YOUR_SECRET
+npm install -g @nawwal/mymind
+mymind login --kid YOUR_KID --secret YOUR_SECRET
 # macOS: --store keychain (otherwise ~/.config/mymind/credentials.json)
-# or env: MYMIND_KID + MYMIND_SECRET
+# env MYMIND_KID + MYMIND_SECRET is for ephemeral/CI use
 ```
 
 ## High-signal commands
 
 ```sh
-npx -y @nawwal/mymind search 'tag:reading' --json
-npx -y @nawwal/mymind objects ls --since 7d --json
-npx -y @nawwal/mymind get <object_uid> --json
-npx -y @nawwal/mymind save https://example.com/article --yes-cost --json
-pbpaste | npx -y @nawwal/mymind note --title "$(date +%F) note" --yes-cost --json
+mymind search 'tag:reading' --json
+mymind objects ls --since 7d --json
+mymind get <object_uid> --json
+mymind save https://example.com/article --yes-cost --json
+pbpaste | mymind note --title "$(date +%F) note" --yes-cost --json
 ```
 
 All JSON outputs use `{ "v": 1, "kind": "...", "data": ..., "rateLimit": ..., "warnings": [] }` unless `--compact` is passed.
@@ -25,13 +26,13 @@ All JSON outputs use `{ "v": 1, "kind": "...", "data": ..., "rateLimit": ..., "w
 ## Introspection
 
 ```sh
-npx -y @nawwal/mymind manifest
-npx -y @nawwal/mymind search --syntax
+mymind manifest
+mymind search --syntax
 ```
 
 ## MCP (hosts)
 
-Configure your client to run `npx -y @nawwal/mymind mcp` with `MYMIND_KID` / `MYMIND_SECRET` in `env`, or use `mymind install`.
+After `mymind login`, configure your client to run `mymind mcp`, or use `mymind install`.
 
 ## Writes & safety
 

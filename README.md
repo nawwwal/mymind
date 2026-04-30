@@ -1,6 +1,6 @@
 # @nawwal/mymind
 
-Unofficial **[mymind](https://access.mymind.com/extensions)** **CLI** and **MCP server** for Node.js. Use it from shells and CI (`mymind`), or wire it into Claude, Codex, Cursor, etc. (`mymind mcp` / `npx … mcp`).
+Unofficial **[mymind](https://access.mymind.com/extensions)** **CLI** and **MCP server** for Node.js. Install it once as `mymind`, log in once, then reuse the same saved credentials from shells, CI, cron, and MCP hosts (`mymind mcp`).
 
 Repository: [github.com/nawwwal/mymind](https://github.com/nawwwal/mymind).
 
@@ -15,31 +15,25 @@ Repository: [github.com/nawwwal/mymind](https://github.com/nawwwal/mymind).
   **[access.mymind.com/extensions](https://access.mymind.com/extensions)**  
   (`MYMIND_KID` = key id, **not** your user id)
 
-**2 — Run the CLI (nothing to “install” for most people)**
-
-The package is meant to be run with **`npx`** so you always get a published build:
-
-```sh
-npx -y @nawwal/mymind --help
-```
-
-Optional global install if you want a `mymind` on your `PATH`:
+**2 — Install the CLI once**
 
 ```sh
 npm install -g @nawwal/mymind
 mymind --help
 ```
 
-**3 — Save credentials once**
+`npx -y @nawwal/mymind ...` is still useful for a one-off smoke test, but it is not the normal access pattern.
+
+**3 — Log in once**
 
 Recommended (default: `~/.config/mymind/credentials.json`; macOS can use Keychain):
 
 ```sh
-npx -y @nawwal/mymind login --kid YOUR_KID --secret YOUR_SECRET
+mymind login --kid YOUR_KID --secret YOUR_SECRET
 # macOS: add  --store keychain
 ```
 
-Or **only for the current shell** (good for CI):
+After that, `mymind` and `mymind mcp` resolve credentials from the saved store. Use environment variables only for ephemeral or hosted automation:
 
 ```sh
 export MYMIND_KID=YOUR_KID
@@ -49,9 +43,9 @@ export MYMIND_SECRET=YOUR_SECRET
 **4 — Confirm it works**
 
 ```sh
-npx -y @nawwal/mymind auth status --json
+mymind auth status --json
 # or
-npx -y @nawwal/mymind search 'tag:reading' --json
+mymind search 'tag:reading' --json
 ```
 
 Agents and automation should rely on **`--json`**, stable **exit codes**, and the **`manifest`** output — see [AGENTS.md](AGENTS.md) and [docs/agent-guide.md](docs/agent-guide.md).
@@ -61,13 +55,13 @@ Agents and automation should rely on **`--json`**, stable **exit codes**, and th
 ## Everyday CLI commands
 
 ```sh
-npx -y @nawwal/mymind search 'tag:reading' --json
-npx -y @nawwal/mymind objects ls --since 7d --limit 50 --json
-npx -y @nawwal/mymind get <object_uid> --json
+mymind search 'tag:reading' --json
+mymind objects ls --since 7d --limit 50 --json
+mymind get <object_uid> --json
 ```
 
 - Full command list: [docs/cli-reference.md](docs/cli-reference.md) (generated from the CLI manifest)
-- Machine-readable surface: `npx -y @nawwal/mymind manifest`
+- Machine-readable surface: `mymind manifest`
 
 ---
 
@@ -76,12 +70,12 @@ npx -y @nawwal/mymind get <object_uid> --json
 If you use **Claude Desktop**, **Claude Code**, **Codex**, or **Cursor**, point them at the same package. The **installer** detects common setups and writes config:
 
 ```sh
-npx -y @nawwal/mymind install
+mymind install
 ```
 
-Set `MYMIND_KID` and `MYMIND_SECRET` in the environment first, **or** run `mymind login` so the MCP process can resolve credentials from your saved store (when you configure it that way). Use `install --dry-run` to preview.
+Run `mymind login` first so the MCP process can resolve credentials from your saved store. Use `mymind install --dry-run` to preview.
 
-Under the hood the host runs **`npx -y @nawwal/mymind mcp`** (stdio). Manual JSON/TOML examples: **[docs/client-configs.md](docs/client-configs.md)**. Longer walkthrough: **[docs/installation.md](docs/installation.md)**.
+Under the hood the host runs the installed **`mymind mcp`** stdio server. Manual JSON/TOML examples: **[docs/client-configs.md](docs/client-configs.md)**. Longer walkthrough: **[docs/installation.md](docs/installation.md)**.
 
 ---
 
@@ -114,9 +108,9 @@ This project is **unofficial** and **not** endorsed by mymind. It can read and c
 
 | Issue | What to check |
 | --- | --- |
-| Auth errors | Both `MYMIND_KID` and `MYMIND_SECRET`; try `auth status --json` |
-| `npx` cannot find the package | Package name `@nawwal/mymind`; registry `https://registry.npmjs.org/` |
-| MCP client never shows mymind | Restart the client; confirm command `npx` and args `["-y", "@nawwal/mymind", "mcp"]` — see [docs/client-configs.md](docs/client-configs.md) |
+| Auth errors | Run `mymind login` again, or set both `MYMIND_KID` and `MYMIND_SECRET`; try `mymind auth status --json` |
+| `mymind` is not found | Run `npm install -g @nawwal/mymind` and confirm your npm global bin directory is on `PATH` |
+| MCP client never shows mymind | Restart the client; confirm command `mymind` and args `["mcp"]` — see [docs/client-configs.md](docs/client-configs.md) |
 
 ---
 
