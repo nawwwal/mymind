@@ -1,0 +1,63 @@
+{
+  "name": "@nawwal/mymind-mcp",
+  "version": "0.1.0",
+  "description": "Unofficial personal-use MCP server for the mymind API.",
+  "type": "module",
+  "packageManager": "npm@11.13.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nawwwal/mymind-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nawwwal/mymind-mcp/issues"
+  },
+  "homepage": "https://github.com/nawwwal/mymind-mcp#readme",
+  "bin": {
+    "mymind-mcp": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean --target node22 --out-dir dist --splitting false",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "pack:check": "node scripts/pack-check.mjs",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run pack:check",
+    "prepublishOnly": "npm run verify"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mymind",
+    "ai"
+  ],
+  "author": "nawwal",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
