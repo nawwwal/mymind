@@ -176,7 +176,7 @@ export function createServerConfig(
   }
   return {
     command: DEFAULT_COMMAND,
-    args: ["-y", packageSpec],
+    args: ["-y", packageSpec, "mcp"],
     env: {
       MYMIND_KID: credentials.kid,
       MYMIND_SECRET: credentials.secret

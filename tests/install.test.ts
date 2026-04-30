@@ -20,7 +20,7 @@ describe("installer config helpers", () => {
   it("creates the standard npx server config", () => {
     expect(serverConfig).toEqual({
       command: "npx",
-      args: ["-y", "@nawwal/mymind"],
+      args: ["-y", "@nawwal/mymind", "mcp"],
       env: {
         MYMIND_KID: "kid_123",
         MYMIND_SECRET: "secret_456"
@@ -118,7 +118,7 @@ describe("installer config helpers", () => {
     const replaced = replaceTomlSection(
       source,
       "mcp_servers.mymind",
-      ['[mcp_servers.mymind]', 'command = "npx"', 'args = ["-y", "@nawwal/mymind"]'].join("\n")
+      ['[mcp_servers.mymind]', 'command = "npx"', 'args = ["-y", "@nawwal/mymind", "mcp"]'].join("\n")
     );
 
     expect(replaced).toContain('[profile]\nname = "default"');
@@ -137,7 +137,7 @@ describe("installer config helpers", () => {
 
     expect(config).toContain("[mcp_servers.mymind]");
     expect(config).toContain('command = "npx"');
-    expect(config).toContain('args = ["-y", "@nawwal/mymind"]');
+    expect(config).toContain('args = ["-y", "@nawwal/mymind", "mcp"]');
     expect(config).toContain('MYMIND_KID = "kid_123"');
     expect(config).toContain('MYMIND_SECRET = "secret_456"');
   });
