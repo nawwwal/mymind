@@ -30,7 +30,7 @@ pbpaste | mymind note --title "$(date +%F) standup" --yes-cost --json
 ### Auto-tag last week
 
 ```sh
-mymind objects ls --since 7d --json | jq -r '.data[].id' | mymind objects tag --tag review --yes --ndjson
+mymind objects ls --since 7d --json | jq -r '.data[].id' | mymind tag --tag review --yes --ndjson
 ```
 
 ### Search-and-summarize loop
@@ -50,7 +50,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - run: npx -y @nawwal/mymind search "weekly review" --json
+      - run: npm install -g @nawwal/mymind
+      - run: mymind search "weekly review" --json
         env:
           MYMIND_KID: ${{ secrets.MYMIND_KID }}
           MYMIND_SECRET: ${{ secrets.MYMIND_SECRET }}

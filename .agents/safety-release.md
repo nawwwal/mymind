@@ -39,8 +39,8 @@ npm run verify
 Live smoke requires real credentials and should start read-only:
 
 ```sh
-npx -y @nawwal/mymind whoami --json
-npx -y @nawwal/mymind objects ls --since 7d --json
+mymind whoami --json
+mymind objects ls --since 7d --json
 ```
 
 ## npm And GitHub

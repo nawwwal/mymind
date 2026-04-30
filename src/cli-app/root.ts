@@ -23,11 +23,12 @@ import { objectsRootCommand, objectsGetCommand, runObjectsListShortcut } from ".
 import { spacesRootCommand } from "./commands/spaces.js";
 import { tagsRootCommand } from "./commands/tags.js";
 import { CLI_MANIFEST } from "./manifest-data.js";
-import { decorateCreateResult, handleCliError, installProcessErrorHandlers, printEnvelope, printListEnvelope, requireConfirm, Exit } from "./io.js";
+import { decorateCreateResult, handleCliError, installProcessErrorHandlers, outputMode, printEnvelope, printListEnvelope, requireConfirm, Exit } from "./io.js";
 import { parseOptionalLimit } from "./limits.js";
+import { parseSearchIntent } from "./search-intent.js";
 import { SEARCH_SYNTAX_REFERENCE } from "./search-syntax.js";
 import { withClient } from "./run-client.js";
-import { readStdinAll } from "./stdin.js";
+import { readStdinAll, readStdinLines } from "./stdin.js";
 
 function readPkgVersion(): string {
   try {
@@ -77,10 +78,17 @@ const manifestCommand = defineCommand({
 });
 
 const searchCommand = defineCommand({
-  meta: { name: "search", description: "Search mymind (GET /search)" },
+  meta: { name: "search", description: "Search mymind" },
   args: {
-    syntax: { type: "boolean", description: "Print search DSL reference" },
     q: { type: "positional", description: "Query string", required: false },
+    query: { type: "string", description: "Raw MyMind search DSL query" },
+    tag: { type: "string", description: "Tag filter; repeat or comma-separate", alias: ["tags"] },
+    type: { type: "string", description: "Object type filter" },
+    domain: { type: "string", description: "Domain filter" },
+    title: { type: "string", description: "Title filter" },
+    completed: { type: "string", description: "completed:true or completed:false" },
+    action: { type: "string", description: "Action filter: read, watch, make, purchase" },
+    syntax: { type: "boolean", description: "Print search DSL reference" },
     limit: { type: "string", description: "Max results (default 20)", valueHint: "n" },
     semantic: { type: "boolean", description: "Semantic search" },
     rerank: { type: "boolean", description: "Rerank (Mastermind)" },
@@ -95,7 +103,18 @@ const searchCommand = defineCommand({
       }
       const q = args.q as string | undefined;
       const similarTo = args.similarTo as string | undefined;
-      if (!q && !similarTo) throw new Error("Provide a query argument, --similar-to <uid>, or --syntax");
+      const intent = similarTo
+        ? { query: q ?? "", warnings: [] }
+        : parseSearchIntent({
+          q,
+          query: args.query as string | undefined,
+          tags: parseRepeatedValues(args.tag as string | string[] | undefined),
+          type: args.type as string | undefined,
+          domain: args.domain as string | undefined,
+          title: args.title as string | undefined,
+          completed: args.completed as string | undefined,
+          action: args.action as string | undefined
+        });
       if (args.semantic || args.rerank) {
         requireConfirm(
           args.yesCost,
@@ -104,13 +123,73 @@ const searchCommand = defineCommand({
       }
       await withClient(async (client) => {
         const result = await client.search({
-          q: q ?? "",
+          q: intent.query,
           similarTo,
           limit: parseOptionalLimit(args.limit),
           semantic: args.semantic,
           rerank: args.rerank
         });
+        printSearchHint(intent.query, intent.interpretedFrom);
         printListEnvelope("search", result.data, result.rateLimit);
+      });
+    } catch (error) {
+      handleCliError(error);
+    }
+  }
+});
+
+const tagCommand = defineCommand({
+  meta: { name: "tag", description: "Add tags to objects" },
+  args: {
+    id: { type: "positional", description: "Object uid", required: false },
+    tag: { type: "string", description: "Tag name; repeat or comma-separate", required: true, alias: ["tags"] },
+    yes: { type: "boolean", alias: ["y"] },
+    dryRun: { type: "boolean", alias: ["dry-run"] }
+  },
+  async run({ args }) {
+    try {
+      const tags = parseRepeatedValues(args.tag as string | string[] | undefined).map((name) => ({ name }));
+      if (tags.length === 0) throw new Error("Provide at least one tag. Example: mymind tag <object-id> --tag reading");
+      const ids = await idsFromArgOrStdin(args.id as string | undefined, "Provide <object-id> or pipe object ids on stdin");
+      if (args.dryRun === true) {
+        printEnvelope("tag", { dryRun: true, preview: { ids, tags } }, {});
+        process.exit(Exit.DRY_RUN);
+      }
+      requireConfirm(args.yes, "Tagging requires --yes or MYMIND_AUTO_CONFIRM=1.");
+      await withClient(async (client) => {
+        for (const objectId of ids) {
+          const result = await client.addObjectTags(objectId, tags);
+          printEnvelope("tag", result.data, result.rateLimit);
+        }
+      });
+    } catch (error) {
+      handleCliError(error);
+    }
+  }
+});
+
+const moveCommand = defineCommand({
+  meta: { name: "move", description: "Add objects to a space" },
+  args: {
+    objectId: { type: "positional", description: "Object uid", required: false },
+    space: { type: "string", description: "Space uid", required: true },
+    yes: { type: "boolean", alias: ["y"] },
+    dryRun: { type: "boolean", alias: ["dry-run"] }
+  },
+  async run({ args }) {
+    try {
+      const spaceId = args.space as string;
+      const objectIds = await idsFromArgOrStdin(args.objectId as string | undefined, "Provide <object-id> or pipe object ids on stdin");
+      if (args.dryRun === true) {
+        printEnvelope("move", { dryRun: true, preview: { objectIds, spaceId } }, {});
+        process.exit(Exit.DRY_RUN);
+      }
+      requireConfirm(args.yes, "Adding objects to a space requires --yes or MYMIND_AUTO_CONFIRM=1.");
+      await withClient(async (client) => {
+        for (const objectId of objectIds) {
+          const result = await client.addObjectToSpace(spaceId, objectId);
+          printEnvelope("move", result.data, result.rateLimit);
+        }
       });
     } catch (error) {
       handleCliError(error);
@@ -369,6 +448,8 @@ export const rootCommand = defineCommand({
     save: saveCommand,
     note: noteCommand,
     capture: captureCommand,
+    tag: tagCommand,
+    move: moveCommand,
     objects: objectsRootCommand,
     spaces: spacesRootCommand,
     tags: tagsRootCommand,
@@ -386,6 +467,10 @@ export function runCli(argv: string[] = process.argv): Promise<void> {
     process.stdout.write(`${JSON.stringify(entry ?? CLI_MANIFEST, null, 2)}\n`);
     return Promise.resolve();
   }
+  const helpHandled = handleHelp(rawArgs);
+  if (helpHandled !== undefined) return helpHandled;
+  const suggestionHandled = handleSuggestion(rawArgs);
+  if (suggestionHandled !== undefined) return suggestionHandled;
   if (argv.includes("--profile")) {
     process.stderr.write("Error: --profile is reserved for multi-profile support in v1.x.\n");
     process.exit(Exit.USAGE);
@@ -406,3 +491,149 @@ export function runCli(argv: string[] = process.argv): Promise<void> {
   });
   return applyCliConfigFile(argv).then(() => runMain(rootCommand, { rawArgs }));
 }
+
+function parseRepeatedValues(value: string | string[] | undefined): string[] {
+  const values = Array.isArray(value) ? value : value === undefined ? [] : [value];
+  return values.flatMap((entry) => entry.split(",")).map((entry) => entry.trim()).filter(Boolean);
+}
+
+async function idsFromArgOrStdin(fromArg: string | undefined, message: string): Promise<string[]> {
+  const stdinIds = await readStdinLines();
+  const ids = fromArg ? [fromArg, ...stdinIds] : stdinIds;
+  if (ids.length === 0) throw new Error(message);
+  return ids;
+}
+
+function printSearchHint(query: string, interpretedFrom?: string | undefined): void {
+  if (outputMode() !== "text") return;
+  const prefix = interpretedFrom ? `Interpreted "${interpretedFrom}" as` : "Searching";
+  process.stderr.write(`${prefix}: ${query}\n`);
+}
+
+function handleHelp(rawArgs: string[]): Promise<void> | undefined {
+  if (rawArgs[0] === "help") {
+    const topic = rawArgs.slice(1).filter((arg) => !arg.startsWith("-")).join(" ");
+    const text = helpText(topic);
+    if (text) {
+      process.stdout.write(text);
+      return Promise.resolve();
+    }
+    process.stderr.write(`Unknown help topic "${topic}".\nDid you mean: mymind help search?\n`);
+    process.exit(Exit.USAGE);
+  }
+
+  if (rawArgs.length === 0 || rawArgs.includes("--help") || rawArgs.includes("-h")) {
+    if (rawArgs.includes("--json")) return undefined;
+    const path = rawArgs.filter((arg) => !arg.startsWith("-")).join(" ");
+    const text = helpText(path);
+    if (text) {
+      process.stdout.write(text);
+      return Promise.resolve();
+    }
+  }
+
+  return undefined;
+}
+
+function handleSuggestion(rawArgs: string[]): Promise<void> | undefined {
+  if (rawArgs[0] === "tags" && rawArgs[1] && !["ls", "--help", "-h"].includes(rawArgs[1])) {
+    process.stderr.write(`Unknown command "mymind tags ${rawArgs[1]}".\nDid you mean: mymind search --tag ${rawArgs[1]}?\n`);
+    process.exit(Exit.USAGE);
+  }
+
+  const command = rawArgs[0];
+  if (command && !command.startsWith("-") && !(command in (rootCommand.subCommands ?? {}))) {
+    process.stderr.write(`Unknown command "mymind ${command}".\nDid you mean: mymind search --tag reading?\n`);
+    process.exit(Exit.USAGE);
+  }
+
+  return undefined;
+}
+
+function helpText(topic: string): string | undefined {
+  if (topic === "") return TOP_LEVEL_HELP;
+  if (topic === "search") return SEARCH_HELP;
+  if (topic === "objects") return OBJECTS_HELP;
+  if (topic === "tags") return TAGS_HELP;
+  return undefined;
+}
+
+const TOP_LEVEL_HELP = `mymind - unofficial CLI and MCP bridge for the mymind API
+
+Examples
+  mymind search --tag reading
+  mymind search "weekly review" --type note
+  mymind save https://example.com --yes-cost
+  mymind ls --since 7d
+
+Usage
+  mymind <command> [options]
+
+Commands
+  search      Search with friendly filters or MyMind DSL
+  ls          List recent objects
+  get         Get an object by id
+  save        Save a URL
+  note        Create a markdown note from stdin
+  capture     Upload a local file
+  tag         Add tags to objects
+  move        Add objects to a space
+  spaces      Manage spaces
+  tags        List tags
+  help        Show help
+
+Use mymind help <command> for more information.
+`;
+
+const SEARCH_HELP = `Search mymind
+
+Examples
+  mymind search --tag reading
+  mymind search "weekly review" --type note
+  mymind search "#reading"
+  mymind search "tags reading"
+  mymind search "notes about design"
+  mymind search "design systems" --type note --tag work
+
+Usage
+  mymind search [text] [--tag name] [--type type] [--domain host] [--title text]
+
+Friendly filters
+  --tag, --tags       Tag filter; repeat or comma-separate
+  --type              Object type, for example note or url
+  --domain            Domain filter
+  --title             Title filter
+  --completed         true or false
+  --action            read, watch, make, or purchase
+  --query             Raw MyMind search DSL
+
+Other options
+  --limit <n>         Max results
+  --semantic          Semantic search
+  --rerank            Rerank (Mastermind)
+  --similar-to <id>   Find related content
+  --yes-cost          Confirm semantic/rerank credit spend
+  --syntax            Print raw DSL reference
+`;
+
+const OBJECTS_HELP = `Object commands
+
+Examples
+  mymind ls --since 7d
+  mymind get <object-id>
+  mymind tag <object-id> --tag reading --yes
+  mymind move <object-id> --space <space-id> --yes
+
+Prefer top-level search, tag, and move commands for everyday use.
+`;
+
+const TAGS_HELP = `Tag commands
+
+Examples
+  mymind tags
+  mymind search --tag reading
+  mymind tag <object-id> --tag reading --yes
+
+Usage
+  mymind tags [--limit n]
+`;

@@ -10,8 +10,8 @@
 Both surfaces share the same action core, credential resolution, and safety model.
 
 ```sh
-npx -y @nawwal/mymind search 'tag:reading' --json
-npx -y @nawwal/mymind mcp
+mymind search --tag reading --json
+mymind mcp
 ```
 
 ## Product Thesis

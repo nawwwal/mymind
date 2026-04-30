@@ -104,7 +104,16 @@ export const SearchMatchSchema = z.object({
   score: z.number()
 }).catchall(z.unknown());
 
-export const SearchResultSchema = z.array(SearchMatchSchema);
+export const SearchResultSchema = z
+  .union([
+    z.array(SearchMatchSchema),
+    z
+      .object({
+        matches: z.array(SearchMatchSchema)
+      })
+      .catchall(z.unknown())
+  ])
+  .transform((result) => (Array.isArray(result) ? result : result.matches));
 
 export const ConvertResultSchema = z.union([z.string(), ProseSchema]);
 

@@ -42,7 +42,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     }
   }
 
-  if (!kid || !secret) {
+  if ((!kid || !secret) && env.MYMIND_DISABLE_KEYCHAIN !== "1") {
     const fromKeychain = tryLoadCredentialsFromKeychain();
     if (fromKeychain) {
       kid = fromKeychain.kid;

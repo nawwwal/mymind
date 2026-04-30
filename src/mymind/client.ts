@@ -478,7 +478,7 @@ export class MyMindClient {
     return this.request({
       method: "POST",
       path: `/objects/${encodeURIComponent(objectId)}/tags`,
-      body: tags,
+      body: { tags },
       schema: EmptyObjectSchema
     });
   }

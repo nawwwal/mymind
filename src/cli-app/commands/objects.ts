@@ -17,22 +17,6 @@ import { filterObjectsBySince, parseSinceCutoffMs } from "../since.js";
 import { readStdinAll, readStdinLines } from "../stdin.js";
 import { withClient } from "../run-client.js";
 
-function parseCommaTags(raw: string): Array<{ name: string }> {
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((name) => ({ name }));
-}
-
-function parseCommaSpaceIds(raw: string): Array<{ id: string }> {
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((id) => ({ id }));
-}
-
 async function runObjectsList(flags: {
   limit?: string | undefined;
   since?: string | undefined;
@@ -465,66 +449,6 @@ const objectsRelatedCommand = defineCommand({
   }
 });
 
-const objectsTagCommand = defineCommand({
-  meta: { name: "tag", description: "Add tags to objects" },
-  args: {
-    id: { type: "positional", description: "Object uid", required: false },
-    tags: { type: "string", description: "Comma-separated tag names", required: true },
-    yes: { type: "boolean", alias: ["y"] },
-    dryRun: { type: "boolean", alias: ["dry-run"] }
-  },
-  async run({ args }) {
-    try {
-      const tags = parseCommaTags(args.tags as string);
-      if (tags.length === 0) throw new Error("Provide at least one tag in --tags");
-      const fromArg = args.id as string | undefined;
-      const stdinIds = await readStdinLines();
-      const ids = fromArg ? [fromArg, ...stdinIds] : stdinIds;
-      if (ids.length === 0) throw new Error("Provide <id> or pipe ids on stdin");
-      if (args.dryRun === true) exitDryRun("objects.tag", { ids, tags });
-      requireConfirm(args.yes, "Tagging requires --yes or MYMIND_AUTO_CONFIRM=1.");
-      await withClient(async (client) => {
-        for (const objectId of ids) {
-          const result = await client.addObjectTags(objectId, tags);
-          printEnvelope("objects.tag", result.data, result.rateLimit);
-        }
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
-const objectsLinkSpacesCommand = defineCommand({
-  meta: { name: "link-spaces", description: "Add object to spaces (bulk via stdin ids)" },
-  args: {
-    spaces: { type: "string", description: "Comma-separated space ids", required: true },
-    objectId: { type: "positional", description: "Object uid", required: false },
-    yes: { type: "boolean", alias: ["y"] },
-    dryRun: { type: "boolean", alias: ["dry-run"] }
-  },
-  async run({ args }) {
-    try {
-      const spaces = parseCommaSpaceIds(args.spaces as string);
-      if (spaces.length === 0) throw new Error("Provide at least one space id in --spaces");
-      const fromArg = args.objectId as string | undefined;
-      const stdinIds = await readStdinLines();
-      const objectIds = fromArg ? [fromArg, ...stdinIds] : stdinIds;
-      if (objectIds.length === 0) throw new Error("Provide <objectId> or pipe object ids on stdin");
-      if (args.dryRun === true) exitDryRun("objects.link-spaces", { objectIds, spaces });
-      requireConfirm(args.yes, "Linking spaces requires --yes or MYMIND_AUTO_CONFIRM=1.");
-      await withClient(async (client) => {
-        for (const objectId of objectIds) {
-          const result = await client.addObjectSpaces(objectId, spaces);
-          printEnvelope("objects.link-spaces", result.data, result.rateLimit);
-        }
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
 const objectsThumbnailCommand = defineCommand({
   meta: { name: "thumbnail", description: "Fetch object thumbnail (raw bytes or file)" },
   args: {
@@ -577,43 +501,6 @@ const objectsThumbnailCommand = defineCommand({
   }
 });
 
-const objectsSearchCommand = defineCommand({
-  meta: { name: "search", description: "Search objects (same as top-level search)" },
-  args: {
-    q: { type: "positional", description: "Query", required: false },
-    limit: { type: "string", valueHint: "n" },
-    semantic: { type: "boolean" },
-    rerank: { type: "boolean" },
-    similarTo: { type: "string", alias: ["similar-to"] },
-    yesCost: { type: "boolean", alias: ["yes-cost"] }
-  },
-  async run({ args }) {
-    try {
-      const q = args.q as string | undefined;
-      const similarTo = args.similarTo as string | undefined;
-      if (!q && !similarTo) throw new Error("Provide a query or --similar-to");
-      if (args.semantic || args.rerank) {
-        requireConfirm(
-          args.yesCost,
-          "Semantic/rerank search requires --yes-cost or MYMIND_AUTO_CONFIRM=1."
-        );
-      }
-      await withClient(async (client) => {
-        const result = await client.search({
-          q: q ?? "",
-          similarTo,
-          limit: parseOptionalLimit(args.limit as string | undefined),
-          semantic: args.semantic,
-          rerank: args.rerank
-        });
-        printEnvelope("objects.search", result.data, result.rateLimit);
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  }
-});
-
 export const objectsRootCommand = defineCommand({
   meta: { name: "objects", description: "Object operations" },
   subCommands: {
@@ -629,10 +516,7 @@ export const objectsRootCommand = defineCommand({
     content: objectsContentCommand,
     replace: objectsReplaceCommand,
     related: objectsRelatedCommand,
-    tag: objectsTagCommand,
-    "link-spaces": objectsLinkSpacesCommand,
-    thumbnail: objectsThumbnailCommand,
-    search: objectsSearchCommand
+    thumbnail: objectsThumbnailCommand
   }
 });
 

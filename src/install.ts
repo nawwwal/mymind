@@ -5,17 +5,12 @@ import { homedir, platform } from "node:os";
 import { dirname, join } from "node:path";
 import { stdin as input, stdout as output } from "node:process";
 import { tryLoadCredentialsFromFile } from "./auth/credentials-file.js";
+import { tryLoadCredentialsFromKeychain } from "./auth/store.js";
 
 const SERVER_NAME = "mymind";
-const DEFAULT_PACKAGE_SPEC = "@nawwal/mymind";
-const DEFAULT_COMMAND = "npx";
+const DEFAULT_COMMAND = "mymind";
 
 type ClientId = "claude-code" | "claude-desktop" | "codex" | "cursor";
-
-interface Credentials {
-  kid: string;
-  secret: string;
-}
 
 interface ServerConfig {
   command: string;
@@ -28,9 +23,7 @@ interface InstallOptions {
   dryRun: boolean;
   yes: boolean;
   noInput: boolean;
-  useBinOnly: boolean;
   scope: "user" | "local" | "project";
-  packageSpec: string;
   homeDir: string;
   env: NodeJS.ProcessEnv;
   pathEnv: string;
@@ -48,9 +41,7 @@ interface ParsedArgs {
   dryRun: boolean;
   yes: boolean;
   noInput: boolean;
-  useBinOnly: boolean;
   scope: "user" | "local" | "project";
-  packageSpec: string;
 }
 
 const CLIENT_IDS: ClientId[] = ["claude-code", "claude-desktop", "codex", "cursor"];
@@ -68,12 +59,7 @@ export async function runInstallCommand(argv: string[]): Promise<void> {
     throw new Error("Non-interactive install requires --yes (or use --dry-run).");
   }
 
-  let credentials: Credentials | null = null;
-  if (!options.useBinOnly) {
-    credentials = await getCredentials(options.env, options.noInput);
-  }
-
-  const config = createServerConfig(credentials, options.packageSpec, options.useBinOnly);
+  const config = createServerConfig();
   const targets = await resolveTargets(options);
 
   if (targets.length === 0) {
@@ -81,6 +67,10 @@ export async function runInstallCommand(argv: string[]): Promise<void> {
     output.write("Supported targets: Claude Code, Claude Desktop, Codex, Cursor.\n");
     output.write("Run with --clients=codex or --clients=claude-desktop to install for a specific client.\n");
     return;
+  }
+
+  if (!options.dryRun) {
+    await assertCredentialsResolvable(options.env);
   }
 
   output.write(`Detected ${targets.length} target${targets.length === 1 ? "" : "s"}:\n`);
@@ -115,9 +105,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     dryRun: false,
     yes: false,
     noInput: false,
-    useBinOnly: false,
-    scope: "user",
-    packageSpec: DEFAULT_PACKAGE_SPEC
+    scope: "user"
   };
 
   for (const arg of argv) {
@@ -133,20 +121,12 @@ export function parseArgs(argv: string[]): ParsedArgs {
       parsed.noInput = true;
       continue;
     }
-    if (arg === "--use-bin-only") {
-      parsed.useBinOnly = true;
-      continue;
-    }
     if (arg.startsWith("--clients=")) {
       parsed.clients = parseClients(arg.slice("--clients=".length));
       continue;
     }
     if (arg.startsWith("--scope=")) {
       parsed.scope = parseScope(arg.slice("--scope=".length));
-      continue;
-    }
-    if (arg.startsWith("--package=")) {
-      parsed.packageSpec = requireValue(arg.slice("--package=".length), "--package");
       continue;
     }
     if (arg === "--help" || arg === "-h") {
@@ -158,28 +138,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
   return parsed;
 }
 
-export function createServerConfig(
-  credentials: Credentials | null,
-  packageSpec = DEFAULT_PACKAGE_SPEC,
-  useBinOnly = false
-): ServerConfig {
-  if (useBinOnly) {
-    return {
-      command: DEFAULT_COMMAND,
-      args: ["-y", packageSpec, "mcp"],
-      env: {}
-    };
-  }
-  if (!credentials?.kid || !credentials?.secret) {
-    throw new Error("Credentials are required unless --use-bin-only is set.");
-  }
+export function createServerConfig(): ServerConfig {
   return {
     command: DEFAULT_COMMAND,
-    args: ["-y", packageSpec, "mcp"],
-    env: {
-      MYMIND_KID: credentials.kid,
-      MYMIND_SECRET: credentials.secret
-    }
+    args: ["mcp"],
+    env: {}
   };
 }
 
@@ -248,14 +211,12 @@ Usage:
   mymind install [options]
 
 Credentials:
-  Set MYMIND_KID and MYMIND_SECRET, use saved credentials from ~/.config/mymind/credentials.json,
-  or enter them when prompted (TTY only).
+  Run \`mymind login\` once before installing. The MCP server will resolve saved credentials
+  from ~/.config/mymind/credentials.json, macOS Keychain, or MYMIND_KID/MYMIND_SECRET at runtime.
 
 Options:
   --clients=auto|claude-code,claude-desktop,codex,cursor
   --scope=user|local|project       Claude Code scope. Defaults to user.
-  --package=@nawwal/mymind         Package spec passed to npx.
-  --use-bin-only                   Run \`npx -y <package> mcp\` without embedding secrets (resolve via credential file/env at runtime).
   --dry-run                        Show detected targets without writing.
   --yes, -y                        Do not ask before writing.
   --no-input                       Fail instead of prompting (implies you must pass --yes for writes).
@@ -361,62 +322,27 @@ async function installClaudeCode(config: ServerConfig, options: InstallOptions):
   return `Installed Claude Code config with scope ${options.scope}.`;
 }
 
-async function getCredentials(env: NodeJS.ProcessEnv, noInput: boolean): Promise<Credentials> {
+async function assertCredentialsResolvable(env: NodeJS.ProcessEnv): Promise<void> {
   const kid = env.MYMIND_KID?.trim();
   const secret = env.MYMIND_SECRET?.trim();
 
   if (kid && secret) {
-    return { kid, secret };
+    return;
   }
 
   const fromFile = await tryLoadCredentialsFromFile(env);
   if (fromFile?.kid && fromFile?.secret) {
-    return { kid: fromFile.kid, secret: fromFile.secret };
+    return;
   }
 
-  if (
-    noInput ||
-    process.env.MYMIND_NO_INPUT === "1" ||
-    process.argv.includes("--no-input") ||
-    !input.isTTY ||
-    !output.isTTY
-  ) {
-    throw new Error(
-      "Set MYMIND_KID and MYMIND_SECRET, run `mymind login`, or run the installer interactively so it can prompt."
-    );
-  }
-
-  const prompts = await import("@clack/prompts");
-
-  let promptedKid = kid?.trim() ?? "";
-  if (!promptedKid) {
-    const answer = await prompts.text({
-      message: "MYMIND_KID",
-      placeholder: "kid_..."
-    });
-    if (prompts.isCancel(answer)) {
-      throw new Error("Install cancelled.");
+  if (env.MYMIND_DISABLE_KEYCHAIN !== "1") {
+    const fromKeychain = tryLoadCredentialsFromKeychain();
+    if (fromKeychain?.kid && fromKeychain.secret) {
+      return;
     }
-    promptedKid = String(answer).trim();
   }
 
-  let promptedSecret = secret?.trim() ?? "";
-  if (!promptedSecret) {
-    const answer = await prompts.password({
-      message: "MYMIND_SECRET",
-      mask: "*"
-    });
-    if (prompts.isCancel(answer)) {
-      throw new Error("Install cancelled.");
-    }
-    promptedSecret = String(answer).trim();
-  }
-
-  if (!promptedKid || !promptedSecret) {
-    throw new Error("Both MYMIND_KID and MYMIND_SECRET are required.");
-  }
-
-  return { kid: promptedKid, secret: promptedSecret };
+  throw new Error("Run `mymind login` before `mymind install`, or set MYMIND_KID and MYMIND_SECRET.");
 }
 
 async function confirmInstallWrites(message: string): Promise<boolean> {
