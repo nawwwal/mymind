@@ -3,7 +3,6 @@ import { accessSync, constants, existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir, platform } from "node:os";
 import { dirname, join } from "node:path";
-import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { tryLoadCredentialsFromFile } from "./auth/credentials-file.js";
 
@@ -90,7 +89,7 @@ export async function runInstallCommand(argv: string[]): Promise<void> {
   }
 
   if (!options.yes && !options.dryRun && !options.noInput) {
-    const confirmed = await askYesNo("Install mymind MCP for these clients? [Y/n] ");
+    const confirmed = await confirmInstallWrites("Install mymind MCP for these clients?");
     if (!confirmed) {
       output.write("No changes made.\n");
       return;
@@ -375,14 +374,43 @@ async function getCredentials(env: NodeJS.ProcessEnv, noInput: boolean): Promise
     return { kid: fromFile.kid, secret: fromFile.secret };
   }
 
-  if (noInput || !input.isTTY || !output.isTTY) {
+  if (
+    noInput ||
+    process.env.MYMIND_NO_INPUT === "1" ||
+    process.argv.includes("--no-input") ||
+    !input.isTTY ||
+    !output.isTTY
+  ) {
     throw new Error(
       "Set MYMIND_KID and MYMIND_SECRET, run `mymind login`, or run the installer interactively so it can prompt."
     );
   }
 
-  const promptedKid = kid || (await askPlain("MYMIND_KID: ")).trim();
-  const promptedSecret = secret || (await askHidden("MYMIND_SECRET: ")).trim();
+  const prompts = await import("@clack/prompts");
+
+  let promptedKid = kid?.trim() ?? "";
+  if (!promptedKid) {
+    const answer = await prompts.text({
+      message: "MYMIND_KID",
+      placeholder: "kid_..."
+    });
+    if (prompts.isCancel(answer)) {
+      throw new Error("Install cancelled.");
+    }
+    promptedKid = String(answer).trim();
+  }
+
+  let promptedSecret = secret?.trim() ?? "";
+  if (!promptedSecret) {
+    const answer = await prompts.password({
+      message: "MYMIND_SECRET",
+      mask: "*"
+    });
+    if (prompts.isCancel(answer)) {
+      throw new Error("Install cancelled.");
+    }
+    promptedSecret = String(answer).trim();
+  }
 
   if (!promptedKid || !promptedSecret) {
     throw new Error("Both MYMIND_KID and MYMIND_SECRET are required.");
@@ -391,58 +419,12 @@ async function getCredentials(env: NodeJS.ProcessEnv, noInput: boolean): Promise
   return { kid: promptedKid, secret: promptedSecret };
 }
 
-async function askPlain(prompt: string): Promise<string> {
-  const rl = createInterface({ input, output });
-  try {
-    return await rl.question(prompt);
-  } finally {
-    rl.close();
-  }
-}
-
-async function askHidden(prompt: string): Promise<string> {
-  output.write(prompt);
-
-  const wasRaw = input.isRaw;
-  input.setRawMode(true);
-
-  return await new Promise((resolve) => {
-    let value = "";
-
-    const onData = (chunk: Buffer) => {
-      const text = chunk.toString("utf8");
-      for (const char of text) {
-        if (char === "\u0003") {
-          output.write("\n");
-          process.exit(130);
-        }
-        if (char === "\r" || char === "\n") {
-          input.off("data", onData);
-          input.setRawMode(wasRaw);
-          output.write("\n");
-          resolve(value);
-          return;
-        }
-        if (char === "\u007f" || char === "\b") {
-          value = value.slice(0, -1);
-          continue;
-        }
-        value += char;
-      }
-    };
-
-    input.on("data", onData);
-  });
-}
-
-async function askYesNo(prompt: string): Promise<boolean> {
-  const rl = createInterface({ input, output });
-  try {
-    const answer = (await rl.question(prompt)).trim().toLowerCase();
-    return answer === "" || answer === "y" || answer === "yes";
-  } finally {
-    rl.close();
-  }
+async function confirmInstallWrites(message: string): Promise<boolean> {
+  if (!input.isTTY || !output.isTTY) return false;
+  const prompts = await import("@clack/prompts");
+  const ok = await prompts.confirm({ message, initialValue: true });
+  if (prompts.isCancel(ok)) return false;
+  return ok === true;
 }
 
 function parseClients(value: string): ClientId[] | "auto" {
