@@ -33,6 +33,7 @@ type RequestCase = {
   rawBody?: string;
   accept?: string;
   contentType?: string;
+  expectData?: unknown;
 };
 
 describe("MyMindClient", () => {
@@ -274,10 +275,11 @@ describe("MyMindClient", () => {
     {
       name: "search GET query",
       call: (client) => client.search({ q: "deep work", limit: 4, semantic: true }),
-      response: jsonResponse([]),
+      response: jsonResponse({ matches: [{ id: "obj_1", score: 0.98, semanticScore: 0.91 }] }),
       method: "GET",
       path: "/search",
-      query: { q: ["deep work"], limit: ["4"], semantic: ["true"] }
+      query: { q: ["deep work"], limit: ["4"], semantic: ["true"] },
+      expectData: [{ id: "obj_1", score: 0.98, semanticScore: 0.91 }]
     },
     {
       name: "convert POST content negotiation",
@@ -292,7 +294,11 @@ describe("MyMindClient", () => {
   ])("sends documented request contract for $name", async (testCase) => {
     const { client, calls } = createHarness({ response: testCase.response });
 
-    await testCase.call(client);
+    const result = await testCase.call(client);
+
+    if ("expectData" in testCase) {
+      expect(result).toMatchObject({ data: testCase.expectData });
+    }
 
     const call = calls[0];
     expect(call?.method).toBe(testCase.method);
