@@ -1,6 +1,6 @@
 # MyMind — agent index (project brief)
 
-**Package:** `@nawwal/mymind` on npm. **Bins:** `mymind` (CLI), `mymind-mcp` (alias entry → same MCP stdio command as `mymind mcp`).
+**Package:** `@nawwal/mymind` on npm. **Bins:** `mymind` (CLI), `mymind-mcp` (stdio MCP server, identical to `mymind mcp`).
 
 This repo is an unofficial, agents-first bridge to the authenticated user’s MyMind account: JWT-signed HTTP client, MCP tool surface, and a scriptable CLI.
 

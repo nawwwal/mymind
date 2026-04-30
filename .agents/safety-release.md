@@ -2,7 +2,7 @@
 
 ## Credential Safety
 
-- Required runtime env:
+- Required runtime env (or layered equivalent):
   - `MYMIND_KID`
   - `MYMIND_SECRET`
 - Optional env:
@@ -10,15 +10,16 @@
   - `MYMIND_USER_AGENT`
   - `MYMIND_ALLOWED_FILE_ROOTS`
   - `MYMIND_OUTPUT_DIR`
+  - `MYMIND_OUTPUT`, `MYMIND_AUTO_CONFIRM`, `MYMIND_LOG_FORMAT`, `MYMIND_DEBUG`, `MYMIND_NO_COLOR`
 - Never commit real values.
 - `.env.example` must contain placeholders only.
 - Leave `MYMIND_API_BASE` unset unless testing a trusted host.
 
+Credential resolution order: env vars > `~/.config/mymind/credentials.json` (mode `0600`) > macOS Keychain (`com.nawwal.mymind`).
+
 ## Private Data Safety
 
-MyMind content may include personal notes, private links, credentials, health data, work material, or copyrighted text. Agents should return only the minimum content needed for the task.
-
-Broad search and retrieval can expose private saved material to the active MCP conversation.
+MyMind content may include personal notes, private links, credentials, health data, work material, or copyrighted text. Agents should return only the minimum content needed for the task. Broad search and retrieval can expose private saved material to the active MCP conversation.
 
 ## Local File Safety
 
@@ -33,27 +34,25 @@ Before publishing:
 
 ```sh
 npm run verify
-node dist/cli.js --help
-node dist/cli.js --version
 ```
 
-Recommended install validation:
+Live smoke requires real credentials and should start read-only:
 
 ```sh
-npx -y npm@11.13.0 --cache /private/tmp/npm11-cache ci
+npx -y @nawwal/mymind whoami --json
+npx -y @nawwal/mymind objects ls --since 7d --json
 ```
-
-Live smoke requires real credentials and should start read-only.
 
 ## npm And GitHub
 
-- npm package: `@nawwal/mymind-mcp`
-- GitHub target: `github.com/nawwwal/mymind-mcp`
-- Repo can be private while npm package is public.
+- npm package: `@nawwal/mymind`
+- Bins: `mymind`, `mymind-mcp`
+- GitHub repo: `github.com/nawwwal/mymind`
 - CI tests Node 22 and 24.
-- Workflows pin npm `11.13.0`.
-- Publish uses GitHub Actions OIDC trusted publishing.
+- Workflows install npm `11.12.1` through corepack and prepend the shim onto `PATH` so the toolcache npm 10.x is not used.
+- Publish uses GitHub Actions OIDC trusted publishing (no `NPM_TOKEN` required).
 
-## Known Local Tooling Note
+## Known Tooling Notes
 
-Local npm `11.8.0` produced `Exit handler never called!` on `npm ci`. `npm@10.9.2` and `npm@11.13.0` both verified the lockfile successfully. Keep the pinned npm version unless there is a deliberate tooling upgrade.
+- `npm@11.13.0` ships a broken global install (`Cannot find module 'promise-retry'`); pin `11.12.1` via corepack.
+- The toolcache npm in setup-node images predates Trusted Publishers; the corepack shim must be on `PATH` for OIDC publish to work.

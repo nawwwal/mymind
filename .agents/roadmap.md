@@ -1,37 +1,26 @@
 # Roadmap
 
-Plane or GitHub issues should become the canonical execution tracker if this project grows. This file is only a short orientation.
+Lightweight orientation only. Detailed execution status lives in Plane (or GitHub issues) when configured.
 
-## Phase 1: Shippable npm MCP Package
+## Phase 1 — Shipped
 
-Status: implemented locally.
+`@nawwal/mymind@1.0.1` on npm with provenance via Trusted Publisher.
 
-- TypeScript ESM npm package.
-- Stdio-only binary.
-- MyMind client auth and endpoint wrapper.
-- MCP tools/resources/prompts for practical API coverage.
-- Safety gates, dry-run previews, and path hardening.
-- README, docs, CI, publish workflow, lockfile, and package checks.
+- TypeScript ESM npm package, Node 22+.
+- `mymind` CLI and `mymind-mcp` stdio MCP server.
+- Layered credential resolution (env, file, macOS Keychain).
+- Strict Zod input + output JSON Schemas, machine-readable manifest, per-command JSON help.
+- Stable exit codes, NDJSON list streaming, `--compact`, `--retry-max`, signal-aware shutdown.
+- CI guards drift in `docs/manifest.json`, `docs/schemas/`, `docs/output-schemas/`, `docs/examples/`, `docs/cli-reference.md`.
 
-## Phase 2: Live Validation
+## Phase 2 — Live Validation
 
-Next.
-
-- Run read-only smoke tests with real `MYMIND_KID` and `MYMIND_SECRET`.
-- Validate representative object, search, tag, space, content, convert, and rate-limit behavior against a real account.
-- Compare live responses to schemas and docs.
+- Run read-only smoke against a real account and update `.agents/api-feedback.md` with any drift.
+- Validate object, search, tag, space, content, convert, and rate-limit behavior.
 - Tighten any endpoint names, costs, or response assumptions that differ from official behavior.
 
-## Phase 3: Release Prep
+## Phase 3 — Distribution & UX
 
-- Create private GitHub repo `nawwwal/mymind-mcp`.
-- Push code and run CI on Node 22 and 24.
-- Configure npm trusted publisher for `publish.yml`.
-- Publish `0.1.0` only after live read-only smoke passes.
-
-## Phase 4: Post-Release Hardening
-
-- Add optional live smoke script that never mutates by default.
-- Add version-pinned MCP client config examples.
-- Revisit supported-formats and entities if upstream docs become more complete.
-- Consider MCP elicitation for stronger user-mediated confirmations if host support is mature.
+- Generate asciinema captures for the priority TUI surfaces (`docs/brand/screenshots/`).
+- Evaluate Homebrew tap and single-binary distribution once the API stabilizes.
+- Multi-profile support (`--profile` is reserved today).

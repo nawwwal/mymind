@@ -2,39 +2,41 @@
 
 ## What This Is
 
-`@nawwal/mymind-mcp` is a local MCP bridge for the mymind API. It lets an MCP host search, retrieve, create, organize, convert, and inspect a user's saved mymind content through explicit MCP tools, resources, and prompts.
+`@nawwal/mymind` is an unofficial CLI and MCP bridge for the mymind API. The same package ships:
 
-It is designed as an npm package that can be launched by MCP clients with:
+- `mymind` — agent-friendly CLI that mirrors every MCP tool and adds capture/bulk verbs that only make sense in a shell.
+- `mymind-mcp` — local MCP stdio server for hosts like Claude, Codex, Cursor.
+
+Both surfaces share the same action core, credential resolution, and safety model.
 
 ```sh
-npx -y @nawwal/mymind-mcp
+npx -y @nawwal/mymind search 'tag:reading' --json
+npx -y @nawwal/mymind mcp
 ```
 
 ## Product Thesis
 
-MyMind is valuable because it stores private personal context. This MCP server makes that context usable by agents without turning it into a public SaaS, sync service, or separate knowledge base.
-
-The wedge is: make a user's existing MyMind memory accessible to local agents with safe, inspectable, stdio-based tools.
+MyMind is valuable because it stores private personal context. This bridge makes that context usable by agents — terminal, CLI, MCP host, CI, cron — without turning it into a public SaaS, sync service, or separate knowledge base. Inner-loop capture belongs in the CLI; outer-loop curation belongs in MCP.
 
 ## Audience
 
-- Primary: the package owner using Claude, Codex, Cursor, or similar MCP clients.
-- Secondary: technically comfortable users who can create MyMind access keys and configure local MCP clients.
-- Not primary: teams, hosted deployments, multi-user SaaS, public MyMind mirroring, or analytics workflows.
+- Primary: the package owner using Codex CLI, Claude, Cursor, GitHub Actions, and shell automation.
+- Secondary: technically comfortable users who can create MyMind access keys and prefer scriptable tooling.
+- Not primary: teams, hosted deployments, multi-user SaaS, or analytics workflows.
 
 ## What Not To Build Yet
 
 - No hosted remote MCP server.
 - No OAuth or multi-user account management.
 - No database, cache, sync daemon, or background indexing.
-- No custom UI.
+- No custom GUI.
 - No unsupported MyMind endpoint guessing.
 - No broad content export or scraping workflows.
 
 ## Definition Of Done
 
-- MCP clients can discover the intended tools/resources/prompts.
-- API behavior is covered by tests or honestly marked as partial/reference-only.
-- Write and destructive operations are visibly gated.
-- Package can be built, packed, and launched through the npm bin.
+- MCP clients discover the intended tools, resources, and prompts.
+- CLI verbs share an action core with MCP tools and emit stable JSON envelopes.
+- Write and destructive operations are visibly gated (`--yes-*` flags, MCP confirm literals, `dryRun`).
+- `npm run verify` passes (typecheck, tests, build, manifest/schema drift, pack-check).
 - Docs warn clearly about private data and unofficial status.
