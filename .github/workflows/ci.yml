@@ -32,9 +32,12 @@ jobs:
 
       - name: Use npm 11
         run: |
-          corepack enable
+          NPM_BIN_DIR="$HOME/.local/npm-bin"
+          mkdir -p "$NPM_BIN_DIR"
+          corepack enable --install-directory "$NPM_BIN_DIR" npm
           corepack prepare npm@11.12.1 --activate
-          npm --version
+          echo "$NPM_BIN_DIR" >> "$GITHUB_PATH"
+          "$NPM_BIN_DIR/npm" --version
 
       - name: Install dependencies
         run: npm ci
