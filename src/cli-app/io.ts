@@ -72,3 +72,20 @@ export function requireConfirmDelete(
     process.exit(Exit.CONFIRM);
   }
 }
+
+export function requireConfirmReplace(
+  yes: boolean | undefined,
+  yesReplace: boolean | undefined,
+  msg: string
+): void {
+  if (process.env.MYMIND_AUTO_CONFIRM === "1") return;
+  if (!yes || !yesReplace) {
+    process.stderr.write(`${msg}\n`);
+    process.exit(Exit.CONFIRM);
+  }
+}
+
+export function exitDryRun(kind: string, preview: unknown): never {
+  printEnvelope(kind, { dryRun: true, preview }, {});
+  process.exit(Exit.DRY_RUN);
+}
