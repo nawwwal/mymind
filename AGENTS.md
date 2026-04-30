@@ -6,6 +6,7 @@
 
 ```sh
 npx -y @nawwal/mymind login --kid YOUR_KID --secret YOUR_SECRET
+# macOS: --store keychain (otherwise ~/.config/mymind/credentials.json)
 # or env: MYMIND_KID + MYMIND_SECRET
 ```
 

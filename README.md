@@ -2,7 +2,7 @@
 
 Unofficial **CLI + MCP** bridge for the mymind API: use `mymind` from any terminal or CI, and `mymind-mcp` (stdio) from MCP hosts such as Claude Desktop, Codex, or Cursor.
 
-The package is intended to run through `npx` without a global install. Credentials come from environment variables and/or `mymind login` (see `~/.config/mymind/credentials.json`). It exposes the practical API surface: objects, spaces, tags, conversion, and search—not every undocumented endpoint variant.
+The package is intended to run through `npx` without a global install. Credentials resolve from environment variables, `mymind login` (default: `~/.config/mymind/credentials.json`), and on macOS optionally `mymind login --store keychain`. It exposes the practical API surface: objects, spaces, tags, conversion, and search—not every undocumented endpoint variant.
 
 Repository: `github.com/nawwwal/mymind-mcp` (may stay private while the npm package is public).
 
