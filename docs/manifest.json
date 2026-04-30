@@ -1698,6 +1698,10 @@
       "summary": "Directory for MCP download writes"
     },
     {
+      "name": "MYMIND_JWT_VALIDITY_SECONDS",
+      "summary": "Per-request JWT exp−iat window (60–604800s, default 86400); each HTTP call mints a new token"
+    },
+    {
       "name": "MYMIND_OUTPUT",
       "summary": "CLI output shape: json | ndjson | text"
     },

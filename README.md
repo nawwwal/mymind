@@ -92,7 +92,7 @@ Under the hood the host runs **`npx -y @nawwal/mymind mcp`** (stdio). Manual JSO
 | `MYMIND_API_BASE` | Override API base URL (only if you know you need this) |
 | `MYMIND_USER_AGENT` | Override default user agent string |
 | `MYMIND_ALLOWED_FILE_ROOTS` | Comma-separated allowlist for local file reads/uploads |
-| `MYMIND_OUTPUT_DIR` | Default directory for downloads / generated files |
+| `MYMIND_JWT_VALIDITY_SECONDS` | Per-request JWT `exp`−`iat` window in seconds (default **86400**, min **60**, max **604800**). Each HTTP call still mints a **new** token. |
 
 Treat `MYMIND_SECRET` like a password: not in git, not in chat logs.
 

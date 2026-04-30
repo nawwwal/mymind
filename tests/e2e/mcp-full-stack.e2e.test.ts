@@ -11,7 +11,8 @@ const testConfig = {
   secret: Buffer.from("secret").toString("base64"),
   apiBaseUrl: "https://api.mymind.com",
   userAgent: "e2e-test",
-  allowedFileRoots: []
+  allowedFileRoots: [],
+  jwtValiditySeconds: 86_400
 };
 
 function firstResourceText(contents: unknown): string | undefined {

@@ -8,7 +8,8 @@ const testConfig = {
   secret: Buffer.from("secret").toString("base64"),
   apiBaseUrl: "https://api.mymind.com",
   userAgent: "test",
-  allowedFileRoots: []
+  allowedFileRoots: [],
+  jwtValiditySeconds: 86_400
 };
 
 describe("createMymindMcpServer", () => {

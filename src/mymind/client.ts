@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { z } from "zod";
+import { DEFAULT_JWT_VALIDITY_SECONDS } from "../config.js";
 import {
   AnyResultSchema,
   ConvertResultSchema,
@@ -26,6 +27,8 @@ export interface MyMindClientOptions {
   userAgent?: string;
   fetch?: typeof fetch;
   defaultRetryMax?: number | undefined;
+  /** Seconds from `iat` to `exp` for each request JWT (default {@link DEFAULT_JWT_VALIDITY_SECONDS}). */
+  jwtValiditySeconds?: number | undefined;
 }
 
 export interface MyMindRateLimitMetadata {
@@ -171,8 +174,6 @@ export interface CreateObjectFromFileOptions extends ObjectCreateInput {
 
 const DEFAULT_API_BASE_URL = "https://api.mymind.com";
 
-/** JWT `exp` / `iat` (seconds since epoch). API rejects tokens without `exp`. */
-const REQUEST_JWT_VALIDITY_SECONDS = 300;
 const DEFAULT_USER_AGENT = "@nawwal/mymind/1.0.2";
 
 /** Namespaced surface aligned with upstream `mymindcorp/api` client sketch. */
@@ -226,6 +227,7 @@ export class MyMindClient {
   private readonly userAgent: string;
   private readonly fetchImpl: typeof fetch;
   private readonly defaultRetryMax: number;
+  private readonly jwtValiditySeconds: number;
 
   readonly objects: MyMindObjectsNamespace;
   readonly spaces: MyMindSpacesNamespace;
@@ -246,6 +248,7 @@ export class MyMindClient {
     this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
     this.fetchImpl = options.fetch ?? fetch;
     this.defaultRetryMax = options.defaultRetryMax ?? 3;
+    this.jwtValiditySeconds = options.jwtValiditySeconds ?? DEFAULT_JWT_VALIDITY_SECONDS;
 
     this.objects = {
       list: (opts) => this.listObjects(opts),
@@ -623,7 +626,7 @@ export class MyMindClient {
       method: method.toUpperCase(),
       path,
       iat: nowSec,
-      exp: nowSec + REQUEST_JWT_VALIDITY_SECONDS
+      exp: nowSec + this.jwtValiditySeconds
     });
     const signingInput = `${encodedHeader}.${encodedPayload}`;
     const signature = createHmac("sha256", this.secret).update(signingInput).digest();

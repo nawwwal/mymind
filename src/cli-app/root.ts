@@ -14,7 +14,7 @@ import {
   describeCredentialLayers,
   writeCredentialsToKeychain
 } from "../auth/store.js";
-import { loadConfig } from "../config.js";
+import { jwtValiditySecondsFromEnv, loadConfig } from "../config.js";
 import { InstallHelp, runInstallCommand } from "../install.js";
 import { runMcpStdioServer } from "../mcp-stdio.js";
 import { MyMindClient } from "../mymind/index.js";
@@ -143,7 +143,12 @@ const loginCommand = defineCommand({
       if (store !== "file" && store !== "keychain" && store !== "none") {
         throw new Error('Invalid --store (use file, keychain, or none)');
       }
-      const probeOptions: ConstructorParameters<typeof MyMindClient>[0] = { kid, secret, userAgent: "mymind-login" };
+      const probeOptions: ConstructorParameters<typeof MyMindClient>[0] = {
+        kid,
+        secret,
+        userAgent: "mymind-login",
+        jwtValiditySeconds: jwtValiditySecondsFromEnv(process.env)
+      };
       if (process.env.MYMIND_API_BASE !== undefined) probeOptions.apiBaseUrl = process.env.MYMIND_API_BASE;
       const probe = new MyMindClient(probeOptions);
       await probe.whoami();

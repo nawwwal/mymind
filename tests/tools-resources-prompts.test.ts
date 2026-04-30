@@ -238,6 +238,7 @@ function createConfig(overrides: Partial<MymindMcpConfig> = {}): MymindMcpConfig
     apiBaseUrl: "https://api.example.test",
     userAgent: "test",
     allowedFileRoots: [],
+    jwtValiditySeconds: 86_400,
     ...overrides
   };
 }

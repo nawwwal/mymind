@@ -53,6 +53,7 @@ Generated from `src/cli-app/manifest-data.ts`. Regenerate with `npm run cli-refe
 - `MYMIND_USER_AGENT`: Override User-Agent for API requests
 - `MYMIND_ALLOWED_FILE_ROOTS`: Comma-separated roots allowed for uploads (MCP/CLI)
 - `MYMIND_OUTPUT_DIR`: Directory for MCP download writes
+- `MYMIND_JWT_VALIDITY_SECONDS`: Per-request JWT exp−iat window (60–604800s, default 86400); each HTTP call mints a new token
 - `MYMIND_OUTPUT`: CLI output shape: json | ndjson | text
 - `MYMIND_AUTO_CONFIRM`: Set to "1" to skip interactive cost confirmations in CLI
 - `XDG_CONFIG_HOME`: Overrides config dir for ~/.config/mymind/credentials.json

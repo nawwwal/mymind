@@ -12,7 +12,8 @@ export async function withClient<T>(
     secret: config.secret,
     apiBaseUrl: config.apiBaseUrl,
     userAgent: config.userAgent,
-    defaultRetryMax: Number.isFinite(retryMax) ? retryMax : undefined
+    defaultRetryMax: Number.isFinite(retryMax) ? retryMax : undefined,
+    jwtValiditySeconds: config.jwtValiditySeconds
   });
   return fn(client, config);
 }

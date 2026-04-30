@@ -43,7 +43,8 @@ describe("MyMindClient", () => {
       const secret = Buffer.from("super-secret").toString("base64");
       const { client, calls } = createHarness({
         secret,
-        response: jsonResponse([])
+        response: jsonResponse([]),
+        jwtValiditySeconds: 300
       });
 
       const response = await client.search({ q: "saved thing", limit: 10 });
@@ -475,6 +476,7 @@ describe("MyMindClient", () => {
 function createHarness(options: {
   response: Response;
   secret?: string;
+  jwtValiditySeconds?: number;
 }): ClientHarness {
   const calls: CapturedRequest[] = [];
   const client = new MyMindClient({
@@ -482,6 +484,7 @@ function createHarness(options: {
     secret: options.secret ?? Buffer.from("secret").toString("base64"),
     apiBaseUrl: "https://api.example.test",
     userAgent: "mymind-test",
+    jwtValiditySeconds: options.jwtValiditySeconds,
     fetch: async (input, init) => {
       calls.push({
         url: toUrl(input),

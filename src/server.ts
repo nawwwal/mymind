@@ -28,7 +28,8 @@ export function createMymindMcpServer({ config, client: clientInjected }: Server
       kid: config.kid,
       secret: config.secret,
       apiBaseUrl: config.apiBaseUrl,
-      userAgent: config.userAgent
+      userAgent: config.userAgent,
+      jwtValiditySeconds: config.jwtValiditySeconds
     });
 
   registerMymindTools(server, { client, config });

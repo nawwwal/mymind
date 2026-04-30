@@ -26,6 +26,10 @@ export const CLI_ENV_VARS = [
   { name: "MYMIND_USER_AGENT", summary: "Override User-Agent for API requests" },
   { name: "MYMIND_ALLOWED_FILE_ROOTS", summary: "Comma-separated roots allowed for uploads (MCP/CLI)" },
   { name: "MYMIND_OUTPUT_DIR", summary: "Directory for MCP download writes" },
+  {
+    name: "MYMIND_JWT_VALIDITY_SECONDS",
+    summary: "Per-request JWT exp−iat window (60–604800s, default 86400); each HTTP call mints a new token"
+  },
   { name: "MYMIND_OUTPUT", summary: "CLI output shape: json | ndjson | text" },
   { name: "MYMIND_AUTO_CONFIRM", summary: 'Set to "1" to skip interactive cost confirmations in CLI' },
   { name: "XDG_CONFIG_HOME", summary: "Overrides config dir for ~/.config/mymind/credentials.json" }
