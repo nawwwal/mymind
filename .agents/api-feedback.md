@@ -25,4 +25,6 @@ Promote to public issue/PR when: (1) affects multiple integrators, (2) minimal r
 
 ## Resolved
 
+- **[x] JWT payload must include `exp` (and typically `iat`).** Client now sends both; API returned `AUTH_INVALID` / "Missing expiration (exp)" without them.
+
 (Add releases here when confirmed.)

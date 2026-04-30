@@ -1714,5 +1714,5 @@
     "envelope": "docs/output-schemas/envelope.schema.json",
     "compact": "docs/output-schemas/compact.schema.json"
   },
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

@@ -6,8 +6,7 @@ Credential resolution order:
 2. `$XDG_CONFIG_HOME/mymind/credentials.json` (default `~/.config/mymind/credentials.json`, mode `0600`)
 3. macOS Keychain (`com.nawwal.mymind` / `credentials`)
 
-`mymind login` validates credentials before writing by making a cheap authenticated API request. Use
-`--store=none` to validate without persisting, `--store=file` for the config file, or `--store=keychain`
+`mymind login` validates credentials before writing by making a cheap authenticated API request. Request signing uses a short-lived JWT payload that includes **`iat`** and **`exp`** (Unix seconds); the API rejects tokens missing `exp`. Use `--store=none` to validate without persisting, `--store=file` for the config file, or `--store=keychain`
 on macOS.
 
 The credential file format is:

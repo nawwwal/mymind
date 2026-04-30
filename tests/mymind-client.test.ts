@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   MyMindClient,
   ObjectSchema,
@@ -36,37 +36,45 @@ type RequestCase = {
 };
 
 describe("MyMindClient", () => {
-  it("signs requests with an HS256 JWT containing method and path only", async () => {
-    const secret = Buffer.from("super-secret").toString("base64");
-    const { client, calls } = createHarness({
-      secret,
-      response: jsonResponse([])
-    });
+  it("signs requests with an HS256 JWT containing method, path, iat, and exp", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2020-01-01T00:00:00.000Z"));
+    try {
+      const secret = Buffer.from("super-secret").toString("base64");
+      const { client, calls } = createHarness({
+        secret,
+        response: jsonResponse([])
+      });
 
-    const response = await client.search({ q: "saved thing", limit: 10 });
-    const headers = calls[0]?.headers ?? new Headers();
-    const token = headers.get("Authorization")?.replace("Bearer ", "");
-    const [encodedHeader, encodedPayload, signature] = token?.split(".") ?? [];
+      const response = await client.search({ q: "saved thing", limit: 10 });
+      const headers = calls[0]?.headers ?? new Headers();
+      const token = headers.get("Authorization")?.replace("Bearer ", "");
+      const [encodedHeader, encodedPayload, signature] = token?.split(".") ?? [];
 
-    expect(response.data).toEqual([]);
-    expect(calls[0]?.url.pathname).toBe("/search");
-    expect(calls[0]?.url.searchParams.get("q")).toBe("saved thing");
-    expect(calls[0]?.url.searchParams.get("limit")).toBe("10");
-    expect(headers.get("User-Agent")).toBe("mymind-test");
-    expect(headers.get("Accept")).toBe("application/json");
-    expect(JSON.parse(Buffer.from(encodedHeader ?? "", "base64url").toString("utf8"))).toEqual({
-      alg: "HS256",
-      kid: "kid-1"
-    });
-    expect(JSON.parse(Buffer.from(encodedPayload ?? "", "base64url").toString("utf8"))).toEqual({
-      method: "GET",
-      path: "/search"
-    });
+      expect(response.data).toEqual([]);
+      expect(calls[0]?.url.pathname).toBe("/search");
+      expect(calls[0]?.url.searchParams.get("q")).toBe("saved thing");
+      expect(calls[0]?.url.searchParams.get("limit")).toBe("10");
+      expect(headers.get("User-Agent")).toBe("mymind-test");
+      expect(headers.get("Accept")).toBe("application/json");
+      expect(JSON.parse(Buffer.from(encodedHeader ?? "", "base64url").toString("utf8"))).toEqual({
+        alg: "HS256",
+        kid: "kid-1"
+      });
+      expect(JSON.parse(Buffer.from(encodedPayload ?? "", "base64url").toString("utf8"))).toEqual({
+        method: "GET",
+        path: "/search",
+        iat: 1577836800,
+        exp: 1577836800 + 300
+      });
 
-    const expectedSignature = createHmac("sha256", Buffer.from(secret, "base64"))
-      .update(`${encodedHeader}.${encodedPayload}`)
-      .digest("base64url");
-    expect(signature).toBe(expectedSignature);
+      const expectedSignature = createHmac("sha256", Buffer.from(secret, "base64"))
+        .update(`${encodedHeader}.${encodedPayload}`)
+        .digest("base64url");
+      expect(signature).toBe(expectedSignature);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it.each([

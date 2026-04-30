@@ -170,7 +170,10 @@ export interface CreateObjectFromFileOptions extends ObjectCreateInput {
 }
 
 const DEFAULT_API_BASE_URL = "https://api.mymind.com";
-const DEFAULT_USER_AGENT = "@nawwal/mymind/1.0.1";
+
+/** JWT `exp` / `iat` (seconds since epoch). API rejects tokens without `exp`. */
+const REQUEST_JWT_VALIDITY_SECONDS = 300;
+const DEFAULT_USER_AGENT = "@nawwal/mymind/1.0.2";
 
 /** Namespaced surface aligned with upstream `mymindcorp/api` client sketch. */
 export interface MyMindObjectsNamespace {
@@ -614,8 +617,14 @@ export class MyMindClient {
   }
 
   signRequest(method: string, path: string): string {
+    const nowSec = Math.floor(Date.now() / 1000);
     const encodedHeader = base64UrlJson({ alg: "HS256", kid: this.kid });
-    const encodedPayload = base64UrlJson({ method: method.toUpperCase(), path });
+    const encodedPayload = base64UrlJson({
+      method: method.toUpperCase(),
+      path,
+      iat: nowSec,
+      exp: nowSec + REQUEST_JWT_VALIDITY_SECONDS
+    });
     const signingInput = `${encodedHeader}.${encodedPayload}`;
     const signature = createHmac("sha256", this.secret).update(signingInput).digest();
 

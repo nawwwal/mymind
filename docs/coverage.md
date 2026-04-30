@@ -16,7 +16,7 @@ Status meanings:
 | mymind API page | Status | MCP / CLI coverage |
 | --- | --- | --- |
 | `api` | Reference-only | Establishes the API host, JSON conventions, user-agent expectation, and overall documentation index. No standalone MCP tool is exposed. |
-| `authentication` | Covered | Implemented by the client wrapper. Each request signs an HS256 JWT with `kid`, uppercase method, and request path, then sends it as a bearer token. |
+| `authentication` | Covered | Implemented by the client wrapper. Each request signs an HS256 JWT with `kid`, uppercase method, request path, and standard `iat` / `exp` claims (seconds), then sends it as a bearer token. |
 | `access-control` | Reference-only | Documented as a credential/account-scope concern. This server does not narrow mymind's access scope; users must choose the right mymind key. |
 | `rate-limits` | Covered | Client responses parse `RateLimit-Policy`, `RateLimit`, and `RateLimit-Cost` metadata and return it in tool results. |
 | `errors` | Covered | RFC problem-style JSON errors are converted into typed `MyMindApiError` objects and surfaced through MCP tool errors/results. |
