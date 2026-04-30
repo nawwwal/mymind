@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -27,6 +27,17 @@ export async function tryLoadCredentialsFromFile(
     return null;
   }
   return null;
+}
+
+export async function deleteCredentialsFile(env: NodeJS.ProcessEnv = process.env): Promise<void> {
+  try {
+    await unlink(credentialsFilePath(env));
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function writeCredentialsFile(
