@@ -5,9 +5,10 @@ import { homedir, platform } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { tryLoadCredentialsFromFile } from "./auth/credentials-file.js";
 
 const SERVER_NAME = "mymind";
-const DEFAULT_PACKAGE_SPEC = "@nawwal/mymind-mcp";
+const DEFAULT_PACKAGE_SPEC = "@nawwal/mymind";
 const DEFAULT_COMMAND = "npx";
 
 type ClientId = "claude-code" | "claude-desktop" | "codex" | "cursor";
@@ -27,6 +28,8 @@ interface InstallOptions {
   clients: ClientId[] | "auto";
   dryRun: boolean;
   yes: boolean;
+  noInput: boolean;
+  useBinOnly: boolean;
   scope: "user" | "local" | "project";
   packageSpec: string;
   homeDir: string;
@@ -45,6 +48,8 @@ interface ParsedArgs {
   clients: ClientId[] | "auto";
   dryRun: boolean;
   yes: boolean;
+  noInput: boolean;
+  useBinOnly: boolean;
   scope: "user" | "local" | "project";
   packageSpec: string;
 }
@@ -60,8 +65,16 @@ export async function runInstallCommand(argv: string[]): Promise<void> {
     pathEnv: process.env.PATH ?? ""
   };
 
-  const credentials = await getCredentials(options.env);
-  const config = createServerConfig(credentials, options.packageSpec);
+  if (options.noInput && !options.yes && !options.dryRun) {
+    throw new Error("Non-interactive install requires --yes (or use --dry-run).");
+  }
+
+  let credentials: Credentials | null = null;
+  if (!options.useBinOnly) {
+    credentials = await getCredentials(options.env, options.noInput);
+  }
+
+  const config = createServerConfig(credentials, options.packageSpec, options.useBinOnly);
   const targets = await resolveTargets(options);
 
   if (targets.length === 0) {
@@ -76,7 +89,7 @@ export async function runInstallCommand(argv: string[]): Promise<void> {
     output.write(`- ${target.label}: ${target.reason}\n`);
   }
 
-  if (!options.yes && !options.dryRun) {
+  if (!options.yes && !options.dryRun && !options.noInput) {
     const confirmed = await askYesNo("Install mymind MCP for these clients? [Y/n] ");
     if (!confirmed) {
       output.write("No changes made.\n");
@@ -102,6 +115,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     clients: "auto",
     dryRun: false,
     yes: false,
+    noInput: false,
+    useBinOnly: false,
     scope: "user",
     packageSpec: DEFAULT_PACKAGE_SPEC
   };
@@ -113,6 +128,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg === "--yes" || arg === "-y") {
       parsed.yes = true;
+      continue;
+    }
+    if (arg === "--no-input") {
+      parsed.noInput = true;
+      continue;
+    }
+    if (arg === "--use-bin-only") {
+      parsed.useBinOnly = true;
       continue;
     }
     if (arg.startsWith("--clients=")) {
@@ -136,7 +159,21 @@ export function parseArgs(argv: string[]): ParsedArgs {
   return parsed;
 }
 
-export function createServerConfig(credentials: Credentials, packageSpec = DEFAULT_PACKAGE_SPEC): ServerConfig {
+export function createServerConfig(
+  credentials: Credentials | null,
+  packageSpec = DEFAULT_PACKAGE_SPEC,
+  useBinOnly = false
+): ServerConfig {
+  if (useBinOnly) {
+    return {
+      command: DEFAULT_COMMAND,
+      args: ["-y", packageSpec, "mcp"],
+      env: {}
+    };
+  }
+  if (!credentials?.kid || !credentials?.secret) {
+    throw new Error("Credentials are required unless --use-bin-only is set.");
+  }
   return {
     command: DEFAULT_COMMAND,
     args: ["-y", packageSpec],
@@ -163,18 +200,25 @@ export async function updateCursorConfig(path: string, serverConfig: ServerConfi
 
 export async function updateCodexConfig(path: string, serverConfig: ServerConfig): Promise<void> {
   const existing = await readTextIfExists(path);
+  const envToml = codexEnvToml(serverConfig);
   const block = [
     `[mcp_servers.${SERVER_NAME}]`,
     `command = ${tomlString(serverConfig.command)}`,
     `args = ${tomlArray(serverConfig.args)}`,
-    `env = { MYMIND_KID = ${tomlString(serverConfig.env.MYMIND_KID ?? "")}, MYMIND_SECRET = ${tomlString(
-      serverConfig.env.MYMIND_SECRET ?? ""
-    )} }`
+    `env = ${envToml}`
   ].join("\n");
 
   const updated = replaceTomlSection(existing, `mcp_servers.${SERVER_NAME}`, block);
   await ensureParent(path);
   await writeFile(path, updated.endsWith("\n") ? updated : `${updated}\n`, "utf8");
+}
+
+function codexEnvToml(serverConfig: ServerConfig): string {
+  const entries = Object.entries(serverConfig.env).filter(([, v]) => v !== undefined && v !== "");
+  if (entries.length === 0) {
+    return "{}";
+  }
+  return `{ ${entries.map(([k, v]) => `${k} = ${tomlString(v)}`).join(", ")} }`;
 }
 
 export function replaceTomlSection(source: string, sectionName: string, replacement: string): string {
@@ -197,22 +241,25 @@ export function replaceTomlSection(source: string, sectionName: string, replacem
 }
 
 export function getInstallHelp(): string {
-  return `mymind-mcp install
+  return `mymind install
 
 Configure mymind MCP for detected local MCP clients.
 
 Usage:
-  mymind-mcp install [options]
+  mymind install [options]
 
 Credentials:
-  Set MYMIND_KID and MYMIND_SECRET before running, or enter them when prompted.
+  Set MYMIND_KID and MYMIND_SECRET, use saved credentials from ~/.config/mymind/credentials.json,
+  or enter them when prompted (TTY only).
 
 Options:
   --clients=auto|claude-code,claude-desktop,codex,cursor
   --scope=user|local|project       Claude Code scope. Defaults to user.
-  --package=@nawwal/mymind-mcp     Package spec passed to npx.
+  --package=@nawwal/mymind         Package spec passed to npx.
+  --use-bin-only                   Run \`npx -y <package> mcp\` without embedding secrets (resolve via credential file/env at runtime).
   --dry-run                        Show detected targets without writing.
   --yes, -y                        Do not ask before writing.
+  --no-input                       Fail instead of prompting (implies you must pass --yes for writes).
 `;
 }
 
@@ -298,20 +345,13 @@ async function detectTarget(
 }
 
 async function installClaudeCode(config: ServerConfig, options: InstallOptions): Promise<string> {
-  const args = [
-    "mcp",
-    "add",
-    SERVER_NAME,
-    "--scope",
-    options.scope,
-    "--env",
-    `MYMIND_KID=${config.env.MYMIND_KID ?? ""}`,
-    "--env",
-    `MYMIND_SECRET=${config.env.MYMIND_SECRET ?? ""}`,
-    "--",
-    config.command,
-    ...config.args
-  ];
+  const args = ["mcp", "add", SERVER_NAME, "--scope", options.scope];
+  for (const [key, value] of Object.entries(config.env)) {
+    if (value !== undefined && value !== "") {
+      args.push("--env", `${key}=${value}`);
+    }
+  }
+  args.push("--", config.command, ...config.args);
   const result = spawnSync("claude", args, { encoding: "utf8", stdio: "pipe" });
 
   if (result.status !== 0) {
@@ -322,7 +362,7 @@ async function installClaudeCode(config: ServerConfig, options: InstallOptions):
   return `Installed Claude Code config with scope ${options.scope}.`;
 }
 
-async function getCredentials(env: NodeJS.ProcessEnv): Promise<Credentials> {
+async function getCredentials(env: NodeJS.ProcessEnv, noInput: boolean): Promise<Credentials> {
   const kid = env.MYMIND_KID?.trim();
   const secret = env.MYMIND_SECRET?.trim();
 
@@ -330,8 +370,15 @@ async function getCredentials(env: NodeJS.ProcessEnv): Promise<Credentials> {
     return { kid, secret };
   }
 
-  if (!input.isTTY || !output.isTTY) {
-    throw new Error("Set MYMIND_KID and MYMIND_SECRET before running the installer in a non-interactive shell.");
+  const fromFile = await tryLoadCredentialsFromFile(env);
+  if (fromFile?.kid && fromFile?.secret) {
+    return { kid: fromFile.kid, secret: fromFile.secret };
+  }
+
+  if (noInput || !input.isTTY || !output.isTTY) {
+    throw new Error(
+      "Set MYMIND_KID and MYMIND_SECRET, run `mymind login`, or run the installer interactively so it can prompt."
+    );
   }
 
   const promptedKid = kid || (await askPlain("MYMIND_KID: ")).trim();

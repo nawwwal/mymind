@@ -20,11 +20,19 @@ describe("installer config helpers", () => {
   it("creates the standard npx server config", () => {
     expect(serverConfig).toEqual({
       command: "npx",
-      args: ["-y", "@nawwal/mymind-mcp"],
+      args: ["-y", "@nawwal/mymind"],
       env: {
         MYMIND_KID: "kid_123",
         MYMIND_SECRET: "secret_456"
       }
+    });
+  });
+
+  it("creates bin-only config without embedded secrets", () => {
+    expect(createServerConfig(null, "@nawwal/mymind", true)).toEqual({
+      command: "npx",
+      args: ["-y", "@nawwal/mymind", "mcp"],
+      env: {}
     });
   });
 
@@ -33,6 +41,8 @@ describe("installer config helpers", () => {
       clients: "auto",
       dryRun: false,
       yes: false,
+      noInput: false,
+      useBinOnly: false,
       scope: "user"
     });
 
@@ -41,6 +51,11 @@ describe("installer config helpers", () => {
       dryRun: true,
       yes: true,
       scope: "project"
+    });
+
+    expect(parseArgs(["--no-input", "--use-bin-only"])).toMatchObject({
+      noInput: true,
+      useBinOnly: true
     });
   });
 
@@ -103,7 +118,7 @@ describe("installer config helpers", () => {
     const replaced = replaceTomlSection(
       source,
       "mcp_servers.mymind",
-      ['[mcp_servers.mymind]', 'command = "npx"', 'args = ["-y", "@nawwal/mymind-mcp"]'].join("\n")
+      ['[mcp_servers.mymind]', 'command = "npx"', 'args = ["-y", "@nawwal/mymind"]'].join("\n")
     );
 
     expect(replaced).toContain('[profile]\nname = "default"');
@@ -122,7 +137,7 @@ describe("installer config helpers", () => {
 
     expect(config).toContain("[mcp_servers.mymind]");
     expect(config).toContain('command = "npx"');
-    expect(config).toContain('args = ["-y", "@nawwal/mymind-mcp"]');
+    expect(config).toContain('args = ["-y", "@nawwal/mymind"]');
     expect(config).toContain('MYMIND_KID = "kid_123"');
     expect(config).toContain('MYMIND_SECRET = "secret_456"');
   });
