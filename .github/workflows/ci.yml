@@ -31,7 +31,10 @@ jobs:
           cache: npm
 
       - name: Use npm 11
-        run: npm install -g npm@11.12.1
+        run: |
+          corepack enable
+          corepack prepare npm@11.12.1 --activate
+          npm --version
 
       - name: Install dependencies
         run: npm ci
