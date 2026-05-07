@@ -25,4 +25,39 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_GITHUB_TOKEN || github.token }}
+      - name: Build MCPB bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          rm -rf dist/mcpb
+          mkdir -p dist/mcpb
+          for target in darwin_arm64_v8.0 darwin_amd64_v1 linux_arm64_v8.0 linux_amd64_v1 windows_arm64_v8.0 windows_amd64_v1; do
+            platform="${target%_v*}"
+            work="dist/mcpb/${platform}"
+            mkdir -p "${work}/bin"
+            cp manifest.json "${work}/manifest.json"
+            if [[ "${platform}" == windows_* ]]; then
+              cp "dist/mymind-mcp_${target}/mymind-mcp.exe" "${work}/bin/mymind-mcp.exe"
+            else
+              cp "dist/mymind-mcp_${target}/mymind-mcp" "${work}/bin/mymind-mcp"
+              chmod +x "${work}/bin/mymind-mcp"
+            fi
+            case "${platform}" in
+              darwin_arm64) label="macos_apple_silicon" ;;
+              darwin_amd64) label="macos_intel" ;;
+              linux_amd64) label="linux_x64" ;;
+              linux_arm64) label="linux_arm64" ;;
+              windows_amd64) label="windows_x64" ;;
+              windows_arm64) label="windows_arm64" ;;
+              *) label="${platform}" ;;
+            esac
+            (cd "${work}" && zip -qr "../mymind-mcp_${version}_${label}.mcpb" manifest.json bin)
+          done
+          shasum -a 256 dist/mcpb/*.mcpb > dist/mcpb-checksums.txt
+      - name: Upload MCPB bundles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" dist/mcpb/*.mcpb dist/mcpb-checksums.txt --clobber

@@ -41,7 +41,7 @@ macOS Apple Silicon:
 ```bash
 VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
 ASSET_VERSION="${VERSION#v}"
-ASSET="mymind_${ASSET_VERSION}_darwin_arm64.tar.gz"
+ASSET="mymind_${ASSET_VERSION}_macos_apple_silicon.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
 grep " ${ASSET}$" checksums.txt | shasum -a 256 --check
@@ -57,7 +57,7 @@ macOS Intel:
 ```bash
 VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
 ASSET_VERSION="${VERSION#v}"
-ASSET="mymind_${ASSET_VERSION}_darwin_amd64.tar.gz"
+ASSET="mymind_${ASSET_VERSION}_macos_intel.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
 grep " ${ASSET}$" checksums.txt | shasum -a 256 --check
@@ -73,7 +73,7 @@ Linux x86_64:
 ```bash
 VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
 ASSET_VERSION="${VERSION#v}"
-ASSET="mymind_${ASSET_VERSION}_linux_amd64.tar.gz"
+ASSET="mymind_${ASSET_VERSION}_linux_x64.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
 grep " ${ASSET}$" checksums.txt | sha256sum --check
@@ -104,7 +104,7 @@ Windows PowerShell:
 $release = Invoke-RestMethod https://api.github.com/repos/nawwwal/mymind/releases/latest
 $version = $release.tag_name
 $assetVersion = $version -replace '^v', ''
-$asset = "mymind_${assetVersion}_windows_amd64.zip"
+$asset = "mymind_${assetVersion}_windows_x64.zip"
 Invoke-WebRequest "https://github.com/nawwwal/mymind/releases/download/$version/$asset" -OutFile $asset
 Invoke-WebRequest "https://github.com/nawwwal/mymind/releases/download/$version/checksums.txt" -OutFile checksums.txt
 $expected = ((Select-String -Path checksums.txt -Pattern " $asset$").Line -split ' ')[0].ToUpper()
@@ -351,7 +351,7 @@ To install:
 2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
 3. Fill in `MYMIND_KID` and `MYMIND_SECRET` when Claude Desktop prompts you.
 
-Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon (`darwin-arm64`) and Windows (`amd64`, `arm64`); for other platforms, use the manual config below.
+Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon, macOS Intel, Linux, and Windows; for other platforms, use the manual config below.
 
 <details>
 <summary>Manual JSON config (advanced)</summary>

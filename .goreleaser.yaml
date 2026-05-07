@@ -33,7 +33,8 @@ builds:
       - windows_arm64
 archives:
   - formats: [tar.gz]
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}{{- if and (eq .Os "darwin") (eq .Arch "arm64") -}}_macos_apple_silicon{{- else if and (eq .Os "darwin") (eq .Arch "amd64") -}}_macos_intel{{- else if and (eq .Os "linux") (eq .Arch "amd64") -}}_linux_x64{{- else if and (eq .Os "linux") (eq .Arch "arm64") -}}_linux_arm64{{- else if and (eq .Os "windows") (eq .Arch "amd64") -}}_windows_x64{{- else if and (eq .Os "windows") (eq .Arch "arm64") -}}_windows_arm64{{- else -}}_{{ .Os }}_{{ .Arch }}{{- end -}}
     format_overrides:
       - goos: windows
         formats: [zip]
