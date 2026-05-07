@@ -219,63 +219,194 @@ mymind objects list
 
 Run `mymind --help` for the full command reference and flag list.
 
-## Commands
+## Command Guide
 
-### convert
+Use `mymind <command> --help` for the exact flags on any command. The examples below cover the common workflows.
 
-Manage convert
+### Find Things
 
-- **`mymind convert content`** - Converts between plain text, Markdown, and mymind prose. Source and target formats must differ.
-
-### entities
-
-Manage entities
-
-- **`mymind entities get-entity`** - WIP/coming soon. The docs say type identifiers, property shapes, and this endpoint
-may change before launch. Do not ship production integrations against this path yet.
-
-### search
-
-Search mymind
-
-- **`mymind search "query"`** - Search with Lucene-inspired syntax, optional semantic search, related-object matching, and Mastermind-only reranking.
-
-Examples:
+Search normally:
 
 ```bash
-mymind search "reading list" --json
-mymind search "article about memory" --semantic --rerank --json
+mymind search "reading list"
+mymind search "articles about memory" --limit 20
+```
+
+Use the live API only when you want API-backed semantic search or related-object ranking:
+
+```bash
+mymind search "articles about memory" --data-source live --semantic --rerank --json
+mymind search "similar notes" --data-source live --similar-to <object_id> --json
+```
+
+Use local search after syncing when you want fast/offline search:
+
+```bash
+mymind sync --since 30d
 mymind search "design notes" --data-source local
 ```
 
-### objects
+Filter object lists without using the standalone search command:
 
-Manage objects
+```bash
+mymind objects list --q "tag:reading" --limit 50 --json
+mymind objects list --space-id <space_id> --json
+```
 
-- **`mymind objects create`** - Creates an object from exactly one of `url`, `content`, or multipart `blob`.
-Duplicate URL/content/blob saves return the existing object, refresh `bumped`,
-and respond with 200 instead of 201.
-- **`mymind objects delete`** - Soft-deletes an object. Deleted objects are recoverable for 30 days.
-- **`mymind objects get`** - Get an object
-- **`mymind objects list`** - Returns objects accessible to the authenticated key. If `q` is present, search
-semantics and search credit costs apply. Deleted objects are excluded.
-- **`mymind objects update`** - Update object metadata
+### Save Objects
 
-### spaces
+Save a URL:
 
-Manage spaces
+```bash
+mymind objects create \
+  --url "https://example.com/article" \
+  --title "Example article" \
+  --tags "reading,research" \
+  --json
+```
 
-- **`mymind spaces create`** - Create a space
-- **`mymind spaces delete`** - Deletes the space; objects inside are not deleted.
-- **`mymind spaces get`** - Get a space
-- **`mymind spaces list`** - List spaces
-- **`mymind spaces update`** - Update a space
+Save a note or text snippet:
 
-### tags
+```bash
+mymind objects create \
+  --content "Meeting note: follow up on the search UX." \
+  --title "Search UX follow-up" \
+  --tags "notes,work" \
+  --json
+```
 
-Manage tags
+Send a structured create request through stdin:
 
-- **`mymind tags list`** - Tags are created implicitly when first used; there is no standalone create tag endpoint.
+```bash
+printf '%s\n' '{"url":"https://example.com","title":"Example","tags":["reading"]}' |
+  mymind objects create --stdin --json
+```
+
+Preview a write before sending it:
+
+```bash
+mymind objects create --url "https://example.com" --dry-run
+```
+
+### Read Objects
+
+List recent objects:
+
+```bash
+mymind objects list --limit 20
+mymind objects list --limit 20 --json --select id,title,url,bumped
+```
+
+Fetch one object and its readable content:
+
+```bash
+mymind objects get <object_id> --json
+mymind objects content get-object <object_id>
+```
+
+Fetch object media when available:
+
+```bash
+mymind objects thumbnail get-object <object_id> --size 640x640 --deliver file:thumb.jpg
+mymind objects screenshot get-object <object_id> --deliver file:screenshot.png
+mymind objects blob get-object <object_id> --deliver file:original.bin
+```
+
+### Update And Delete
+
+Update editable metadata:
+
+```bash
+mymind objects update <object_id> --title "Better title" --summary "Short useful summary" --json
+```
+
+Soft-delete an object. Deleted objects are recoverable for 30 days:
+
+```bash
+mymind objects delete <object_id> --yes
+```
+
+Use idempotent flags in scripts where a repeated run should not fail:
+
+```bash
+mymind objects create --url "https://example.com" --idempotent --json
+mymind objects delete <object_id> --ignore-missing --yes
+```
+
+### Organize With Tags And Spaces
+
+Tags are created implicitly when first used:
+
+```bash
+mymind tags --limit 100
+mymind objects tags add-object <object_id> --tags "reading,research"
+mymind objects tags remove-object <object_id>
+```
+
+`remove-object` removes the object's tag assignment through the API endpoint; use `objects get` after the call if you need to confirm the final tag set.
+
+Spaces are explicit containers:
+
+```bash
+mymind spaces list
+mymind spaces create --name "Research" --color "#3B82F6" --json
+mymind spaces objects add-to-space <space_id> <object_id>
+mymind spaces objects remove-from-space <space_id> <object_id>
+```
+
+### Sync, Analyze, Export, Import
+
+Sync API data into local SQLite:
+
+```bash
+mymind sync
+mymind sync --since 7d
+mymind sync --full --concurrency 8
+```
+
+Analyze synced data:
+
+```bash
+mymind analytics --type objects
+mymind analytics --type objects --group-by type --limit 10 --json
+```
+
+Export and import JSONL:
+
+```bash
+mymind export objects --format jsonl --output mymind-objects.jsonl
+mymind import objects --input mymind-objects.jsonl --dry-run
+```
+
+### Agent And Script Patterns
+
+Use `--agent` when another program is calling the CLI. It sets JSON, compact output, no prompts, no color, and yes-confirmation defaults:
+
+```bash
+mymind search "renewal notes" --agent
+mymind objects list --agent --select id,title,url
+```
+
+Route output to a file without shell redirection:
+
+```bash
+mymind search "tax receipts" --json --deliver file:receipts.json
+```
+
+Discover the right command:
+
+```bash
+mymind which "search objects"
+mymind api
+mymind agent-context --json
+```
+
+### Other Commands
+
+- `mymind convert` converts between plain text, Markdown, and mymind prose. Source and target formats must differ.
+- `mymind profile` saves reusable flag sets.
+- `mymind workflow` runs compound workflows that combine multiple API operations.
+- `mymind entities` is WIP and should not be used for production integrations yet.
 
 
 ## Output Formats
