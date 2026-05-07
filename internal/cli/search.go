@@ -360,7 +360,7 @@ needs the raw ranked IDs from the search endpoint.`,
 					return classifyAPIError(getErr, flags)
 				}
 				// auto mode + network error: fall through to local FTS
-				fmt.Fprintf(cmd.ErrOrStderr(), "API unreachable, falling back to local search.\n")
+				emitSearchFallbackStatus(cmd, flags)
 			}
 
 			// Local FTS search
@@ -442,7 +442,27 @@ func searchStatusEnabled(flags *rootFlags, stdoutTTY, stderrTTY bool, getenv fun
 	return true
 }
 
+func searchFallbackStatusMessage(flags *rootFlags, stdoutTTY, stderrTTY bool, getenv func(string) string) string {
+	if !searchStatusEnabled(flags, stdoutTTY, stderrTTY, getenv) {
+		return ""
+	}
+	return "API unreachable, falling back to local search."
+}
+
+func emitSearchFallbackStatus(cmd *cobra.Command, flags *rootFlags) {
+	message := searchFallbackStatusMessage(
+		flags,
+		isTerminal(cmd.OutOrStdout()),
+		isTerminal(cmd.ErrOrStderr()),
+		os.Getenv,
+	)
+	emitSearchStatus(cmd, flags, message)
+}
+
 func emitSearchStatus(cmd *cobra.Command, flags *rootFlags, message string) {
+	if message == "" {
+		return
+	}
 	if searchStatusEnabled(flags, isTerminal(cmd.OutOrStdout()), isTerminal(cmd.ErrOrStderr()), os.Getenv) {
 		fmt.Fprintln(cmd.ErrOrStderr(), message)
 	}

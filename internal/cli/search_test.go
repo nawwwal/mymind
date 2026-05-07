@@ -293,3 +293,39 @@ func TestSearchStatusEnabled_Suppression(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchFallbackStatusMessage_Suppression(t *testing.T) {
+	tests := []struct {
+		name      string
+		flags     rootFlags
+		stdoutTTY bool
+		stderrTTY bool
+		env       map[string]string
+		want      string
+	}{
+		{
+			name:      "human tty",
+			stdoutTTY: true,
+			stderrTTY: true,
+			want:      "API unreachable, falling back to local search.",
+		},
+		{name: "json", flags: rootFlags{asJSON: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "agent", flags: rootFlags{agent: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "compact", flags: rootFlags{compact: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "csv", flags: rootFlags{csv: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "quiet", flags: rootFlags{quiet: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "piped stdout", stdoutTTY: false, stderrTTY: true},
+		{name: "ci", stdoutTTY: true, stderrTTY: true, env: map[string]string{"CI": "true"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := searchFallbackStatusMessage(&tt.flags, tt.stdoutTTY, tt.stderrTTY, func(key string) string {
+				return tt.env[key]
+			})
+			if got != tt.want {
+				t.Fatalf("searchFallbackStatusMessage() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
