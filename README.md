@@ -8,7 +8,7 @@ content, blobs, screenshots, and AI-generated metadata.
 
 ### Homebrew
 
-Once releases are published, install both `mymind` and `mymind-mcp` with:
+After the first Go binary release is published, install both `mymind` and `mymind-mcp` with:
 
 ```bash
 brew tap nawwwal/mymind
@@ -34,12 +34,25 @@ make build-all
 
 ### Pre-built binary
 
-Download and install both `mymind` and `mymind-mcp` from the [latest release](https://github.com/nawwwal/mymind/releases/latest).
+Download the archive for your platform from a [release](https://github.com/nawwwal/mymind/releases) that lists binary assets. Each archive contains both `mymind` and `mymind-mcp`.
+
+The current npm-era releases do not have these files. Binary releases use these asset names:
+
+| Platform | Asset |
+| --- | --- |
+| macOS Apple Silicon | `mymind_<version>_darwin_arm64.tar.gz` |
+| macOS Intel | `mymind_<version>_darwin_amd64.tar.gz` |
+| Linux x86_64 | `mymind_<version>_linux_amd64.tar.gz` |
+| Linux ARM64 | `mymind_<version>_linux_arm64.tar.gz` |
+| Windows x86_64 | `mymind_<version>_windows_amd64.zip` |
+| Windows ARM64 | `mymind_<version>_windows_arm64.zip` |
+
+Replace `<version>` with the release version without the leading `v`. For tag `v1.1.0`, download `mymind_1.1.0_darwin_arm64.tar.gz`.
 
 macOS Apple Silicon:
 
 ```bash
-VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+VERSION="v1.1.0" # replace with a release tag that lists binary assets
 ASSET_VERSION="${VERSION#v}"
 ASSET="mymind_${ASSET_VERSION}_darwin_arm64.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
@@ -55,7 +68,7 @@ mymind version
 macOS Intel:
 
 ```bash
-VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+VERSION="v1.1.0" # replace with a release tag that lists binary assets
 ASSET_VERSION="${VERSION#v}"
 ASSET="mymind_${ASSET_VERSION}_darwin_amd64.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
@@ -71,7 +84,7 @@ mymind version
 Linux x86_64:
 
 ```bash
-VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+VERSION="v1.1.0" # replace with a release tag that lists binary assets
 ASSET_VERSION="${VERSION#v}"
 ASSET="mymind_${ASSET_VERSION}_linux_amd64.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
@@ -86,7 +99,7 @@ mymind version
 Linux ARM64:
 
 ```bash
-VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+VERSION="v1.1.0" # replace with a release tag that lists binary assets
 ASSET_VERSION="${VERSION#v}"
 ASSET="mymind_${ASSET_VERSION}_linux_arm64.tar.gz"
 curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
@@ -101,8 +114,7 @@ mymind version
 Windows PowerShell:
 
 ```powershell
-$release = Invoke-RestMethod https://api.github.com/repos/nawwwal/mymind/releases/latest
-$version = $release.tag_name
+$version = "v1.1.0" # replace with a release tag that lists binary assets
 $assetVersion = $version -replace '^v', ''
 $asset = "mymind_${assetVersion}_windows_amd64.zip"
 Invoke-WebRequest "https://github.com/nawwwal/mymind/releases/download/$version/$asset" -OutFile $asset
@@ -303,12 +315,6 @@ claude mcp add mymind mymind-mcp -e MYMIND_KID=<your-kid> -e MYMIND_SECRET=<your
 
 Codex supports MCP servers in the CLI and IDE extension using the same `~/.codex/config.toml` configuration. OpenAI's docs show `codex mcp add` for setup and `codex mcp list` for verification.
 
-Install Codex CLI if needed:
-
-```bash
-npm i -g @openai/codex
-```
-
 Install mymind without Go:
 
 ```bash
@@ -353,7 +359,7 @@ This CLI ships an [MCPB](https://github.com/modelcontextprotocol/mcpb) bundle â€
 
 To install:
 
-1. Download the `.mcpb` for your platform from the [latest release](https://github.com/nawwwal/mymind/releases/latest).
+1. Download the `.mcpb` for your platform from a [release](https://github.com/nawwwal/mymind/releases) that lists MCPB assets.
 2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
 3. Fill in `MYMIND_KID` and `MYMIND_SECRET` when Claude Desktop prompts you.
 
