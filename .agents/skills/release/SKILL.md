@@ -1,62 +1,250 @@
 ---
 name: release
 description: >-
-  Cuts an npm release for @nawwal/mymind via GitHub Actions Trusted Publisher:
-  version bump, verify, tag, and published GitHub Release. Use when the user
-  asks to ship a release, publish to npm, tag a version, or run the publish
-  workflow.
+  Release this repo's Go CLI and MCP server: verify, tag, publish GitHub
+  release assets with GoReleaser, update the nawwwal/homebrew-whimsies tap,
+  build/upload MCPB bundles, smoke-test Homebrew, and clean stale releases.
+  Use when the user asks to ship, tag, publish, update Homebrew, or recover a
+  failed release for mymind.
 ---
 
-# Release (`@nawwal/mymind`)
+# Release (`mymind`)
 
-## Preconditions
+This repo ships two binaries:
 
-- **`npm whoami`** (optional sanity): publishing happens in CI, not locally with a token.
-- npm **Trusted Publisher** links this GitHub repo to `@nawwal/mymind` (org maintains this).
-- **`main` is green** (`.github/workflows/ci.yml`) before versioning.
+- `mymind`
+- `mymind-mcp`
 
-## What triggers npm
+Normal users install both through:
 
-Workflow: `.github/workflows/publish.yml`.
+```sh
+brew install nawwwal/whimsies/mymind
+```
 
-- **`release` / `published`** — primary path. Creating **only** a git tag is **not** enough; the workflow runs when a **GitHub Release** is published for that tag.
-- **`workflow_dispatch`** — manual rerun from the Actions tab (same checkout ref as selected).
+Do not use the old npm release flow. This is a GoReleaser + GitHub Release + Homebrew tap release.
 
-CI installs **`npm@11.12.1`** via corepack and runs **`npm publish --access public --provenance`**. `prepublishOnly` runs **`npm run verify`** (full checks + drift gates).
+## Source Of Truth
 
-## Release tag rule
+- Release workflow: `.github/workflows/release.yml`
+- GoReleaser config: `.goreleaser.yaml`
+- MCPB manifest template: `manifest.json`
+- Installer: `install.sh`
+- Homebrew tap repo: `nawwwal/homebrew-whimsies`
+- User install command: `brew install nawwwal/whimsies/mymind`
 
-For release events, CI asserts:
+## Required GitHub Secret
 
-`package.json` **`version`** === GitHub release **`tag_name`** without the leading **`v`**.
+GitHub Actions must have:
 
-Example: tag **`v1.0.4`** requires **`"version": "1.0.4"`** in `package.json`.
+```text
+GORELEASER_GITHUB_TOKEN
+```
 
-## Agent checklist (ordered)
+It must be able to write to both:
 
-1. **`npm run verify`** on the branch you are about to merge or release from; fix failures first.
-2. **Bump version** in `package.json` (and keep lockfile in sync, e.g. `npm install --package-lock-only`).
-3. **Align default User-Agent** strings that embed the package version:
-   - `src/mymind/client.ts` → `DEFAULT_USER_AGENT`
-   - `src/config.ts` → default `MYMIND_USER_AGENT` fallback
-   - `tests/config.test.ts` → expected `userAgent` in the defaults test
-4. **Regenerate manifest version**: `npm run manifest` (or full **`npm run verify`** — updates `docs/manifest.json` and related generated docs).
-5. **Commit** something like `chore(release): X.Y.Z` (single focused commit for the bump is fine).
-6. **`git push origin main`** (or the release branch policy you use).
-7. **`git tag vX.Y.Z`** and **`git push origin vX.Y.Z`**.
-8. **Publish the GitHub Release** for that tag (so `release` → `published` fires), e.g.:
+- `nawwwal/mymind`
+- `nawwwal/homebrew-whimsies`
+
+Check it before cutting a release:
+
+```sh
+gh secret list --repo nawwwal/mymind | rg '^GORELEASER_GITHUB_TOKEN'
+```
+
+If it is missing and the active `gh` token has the right repo scopes:
+
+```sh
+gh auth token | gh secret set GORELEASER_GITHUB_TOKEN --repo nawwwal/mymind
+```
+
+Without this secret, the tag workflow fails before GoReleaser publishes.
+
+## Preflight
+
+Run from repo root:
+
+```sh
+git status --branch --short
+go test ./...
+make build-all
+sh -n install.sh
+node -e 'JSON.parse(require("fs").readFileSync("manifest.json","utf8")); console.log("manifest json ok")'
+ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml"); puts "release workflow yaml ok"'
+git diff --check
+```
+
+If `goreleaser` is installed:
+
+```sh
+goreleaser check
+```
+
+If not:
+
+```sh
+brew install goreleaser
+```
+
+## Version Rule
+
+Use semver tags:
+
+```text
+vX.Y.Z
+```
+
+The released binary version is injected by GoReleaser from the tag.
+
+## Standard Release
+
+1. Commit the release-worthy changes to `main`.
 
    ```sh
-   gh release create vX.Y.Z --title "@nawwal/mymind vX.Y.Z" --notes "<short changelog>"
+   git status --short
+   git add <changed-files>
+   git commit -m "fix: concise release-worthy message"
+   git push origin main
    ```
 
-9. Watch **Actions → Publish**; confirm **`npm view @nawwal/mymind version`** matches after propagation.
+2. Tag and push.
 
-## Local publish
+   ```sh
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
 
-Avoid **`npm publish`** from a laptop if the package uses **OIDC / Trusted Publishers** and **passkey 2FA** blocks OTP. Prefer the GitHub Release path above.
+3. Watch the workflow.
 
-## Related repo docs
+   ```sh
+   gh run list --workflow Release --limit 3
+   gh run watch <run-id> --exit-status
+   ```
 
-- Release hygiene and smoke expectations: [.agents/safety-release.md](../../safety-release.md)
-- Workflow file: [`.github/workflows/publish.yml`](../../../.github/workflows/publish.yml)
+4. Verify the GitHub release.
+
+   ```sh
+   gh release view vX.Y.Z --json tagName,url,assets \
+     --jq '{tagName,url,assets:[.assets[].name]}'
+   ```
+
+Required release assets:
+
+- `checksums.txt`
+- CLI archives:
+  - `mymind_X.Y.Z_macos_apple_silicon.tar.gz`
+  - `mymind_X.Y.Z_macos_intel.tar.gz`
+  - `mymind_X.Y.Z_linux_x64.tar.gz`
+  - `mymind_X.Y.Z_linux_arm64.tar.gz`
+  - `mymind_X.Y.Z_windows_x64.zip`
+  - `mymind_X.Y.Z_windows_arm64.zip`
+- MCPB bundles:
+  - `mymind-mcp_X.Y.Z_macos_apple_silicon.mcpb`
+  - `mymind-mcp_X.Y.Z_macos_intel.mcpb`
+  - `mymind-mcp_X.Y.Z_windows_x64.mcpb`
+  - `mymind-mcp_X.Y.Z_windows_arm64.mcpb`
+- `mcpb-checksums.txt`
+
+Linux MCPB is intentionally not shipped because Claude Desktop MCPB support is macOS/Windows.
+
+## Homebrew Verification
+
+After the release workflow succeeds:
+
+```sh
+brew update
+brew info nawwwal/whimsies/mymind
+brew fetch --formula nawwwal/whimsies/mymind
+```
+
+`brew info` must show `stable X.Y.Z`.
+
+Upgrade the local machine and smoke-test the installed binary:
+
+```sh
+brew upgrade nawwwal/whimsies/mymind
+mymind version
+mymind doctor
+mymind search skills --json --no-cache --limit 3
+mymind search skills --json --no-cache --limit 3 --select id,title,url,score
+mymind objects create --url 'https://example.com/article' --tags 'reading,research' --dry-run --json
+```
+
+The search command must return useful result summaries, not only IDs/scores and not `No results`.
+The dry-run body must show tags as a JSON array.
+
+## MCPB Verification
+
+Check macOS and Windows bundle names are present in the release.
+
+For Windows MCPB bundles, the packed manifest must point at `.exe`:
+
+```sh
+unzip -p dist/mcpb/mymind-mcp_X.Y.Z_windows_x64.mcpb manifest.json | rg 'mymind-mcp.exe'
+```
+
+Checksums should contain plain filenames from inside `dist/mcpb`, not `dist/mcpb/...` paths.
+
+## If GitHub Actions Fails Before GoReleaser
+
+Most common cause: missing `GORELEASER_GITHUB_TOKEN`.
+
+Fix the secret, delete the failed tag if no release was published, then push the tag again:
+
+```sh
+git push origin :refs/tags/vX.Y.Z
+git tag -d vX.Y.Z
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+## If GitHub Actions Fails But You Need To Publish Locally
+
+Use this only when the workflow is blocked and the local `gh` token has write access.
+
+```sh
+GITHUB_TOKEN="$(gh auth token)" goreleaser release --clean
+```
+
+Then build/upload MCPB bundles using the same logic as `.github/workflows/release.yml`, or rerun the workflow after fixing it.
+
+If GoReleaser generated the Homebrew formula but did not update the tap:
+
+```sh
+tap_repo="$(brew --repo nawwwal/whimsies)"
+cp dist/homebrew/mymind.rb "$tap_repo/Formula/mymind.rb"
+git -C "$tap_repo" diff -- Formula/mymind.rb
+git -C "$tap_repo" add Formula/mymind.rb
+git -C "$tap_repo" commit -m "Update mymind to X.Y.Z"
+git -C "$tap_repo" push origin main
+```
+
+Then run the Homebrew verification section.
+
+## Clean Old Releases
+
+If the user asks for one clean current release only:
+
+```sh
+gh release list --limit 10
+gh release delete vOLD --yes --cleanup-tag
+```
+
+Verify only the intended tag remains:
+
+```sh
+gh release list --limit 5
+git ls-remote --tags origin 'v*'
+```
+
+## Completion Checklist
+
+- `main` is pushed.
+- `vX.Y.Z` tag exists remotely.
+- GitHub release `vX.Y.Z` exists and is latest.
+- Required CLI archives and MCPB bundles are present.
+- Homebrew tap shows `stable X.Y.Z`.
+- `brew fetch --formula nawwwal/whimsies/mymind` succeeds.
+- Installed `mymind version` prints `X.Y.Z`.
+- Installed `mymind search skills --json --no-cache --limit 3` returns useful summaries with titles/URLs/scores when available.
+- Installed dry-run write parses comma-separated tags.
+- Worktrees for both main repo and tap repo are clean.
