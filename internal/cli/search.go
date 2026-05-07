@@ -67,7 +67,7 @@ func extractSearchResults(data json.RawMessage) []json.RawMessage {
 	// Try common wrapper paths: data, results, items
 	var wrapped map[string]json.RawMessage
 	if json.Unmarshal(data, &wrapped) == nil {
-		for _, key := range []string{"data", "results", "items", "records", "entries"} {
+		for _, key := range []string{"matches", "data", "results", "items", "records", "entries"} {
 			if inner, ok := wrapped[key]; ok {
 				if json.Unmarshal(inner, &items) == nil {
 					return items

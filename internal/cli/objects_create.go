@@ -51,16 +51,16 @@ func newObjectsCreateCmd(flags *rootFlags) *cobra.Command {
 					body["content"] = bodyContent
 				}
 				if bodySpaces != "" {
-					var parsedSpaces any
-					if err := json.Unmarshal([]byte(bodySpaces), &parsedSpaces); err != nil {
-						return fmt.Errorf("parsing --spaces JSON: %w", err)
+					parsedSpaces, err := parseStringListFlag(bodySpaces)
+					if err != nil {
+						return fmt.Errorf("parsing --spaces: %w", err)
 					}
 					body["spaces"] = parsedSpaces
 				}
 				if bodyTags != "" {
-					var parsedTags any
-					if err := json.Unmarshal([]byte(bodyTags), &parsedTags); err != nil {
-						return fmt.Errorf("parsing --tags JSON: %w", err)
+					parsedTags, err := parseStringListFlag(bodyTags)
+					if err != nil {
+						return fmt.Errorf("parsing --tags: %w", err)
 					}
 					body["tags"] = parsedTags
 				}

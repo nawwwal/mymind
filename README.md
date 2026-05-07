@@ -152,7 +152,7 @@ mymind objects create \
 ```bash
 mymind objects list --limit 20
 mymind objects get <object_id>
-mymind objects content get-object <object_id>
+mymind objects content get-object <content_object_id>
 ```
 
 ### Keep a local copy

@@ -531,6 +531,29 @@ func extractResponseData(data json.RawMessage) json.RawMessage {
 	}
 }
 
+func parseStringListFlag(value string) (any, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return []string{}, nil
+	}
+	if strings.HasPrefix(value, "[") || strings.HasPrefix(value, "{") {
+		var parsed any
+		if err := json.Unmarshal([]byte(value), &parsed); err != nil {
+			return nil, err
+		}
+		return parsed, nil
+	}
+	parts := strings.Split(value, ",")
+	items := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			items = append(items, part)
+		}
+	}
+	return items, nil
+}
+
 // compactFields keeps only the most important fields for agent consumption.
 // For arrays: allowlist of high-gravity fields (no descriptions).
 // For single objects: blocklist that strips known-verbose fields (descriptions, comments, etc.).

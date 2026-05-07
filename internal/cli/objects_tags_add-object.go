@@ -52,9 +52,9 @@ func newObjectsTagsAddObjectCmd(flags *rootFlags) *cobra.Command {
 			} else {
 				body = map[string]any{}
 				if bodyTags != "" {
-					var parsedTags any
-					if err := json.Unmarshal([]byte(bodyTags), &parsedTags); err != nil {
-						return fmt.Errorf("parsing --tags JSON: %w", err)
+					parsedTags, err := parseStringListFlag(bodyTags)
+					if err != nil {
+						return fmt.Errorf("parsing --tags: %w", err)
 					}
 					body["tags"] = parsedTags
 				}
