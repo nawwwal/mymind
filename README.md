@@ -32,7 +32,86 @@ make build-all
 
 ### Pre-built binary
 
-Download a pre-built binary for your platform from the [latest release](https://github.com/nawwwal/mymind/releases/latest). On macOS, clear the Gatekeeper quarantine: `xattr -d com.apple.quarantine <binary>`. On Unix, mark it executable: `chmod +x <binary>`.
+Download and install both `mymind` and `mymind-mcp` from the [latest release](https://github.com/nawwwal/mymind/releases/latest).
+
+macOS Apple Silicon:
+
+```bash
+VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+ASSET_VERSION="${VERSION#v}"
+ASSET="mymind_${ASSET_VERSION}_darwin_arm64.tar.gz"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
+grep " ${ASSET}$" checksums.txt | shasum -a 256 --check
+tar -xzf "${ASSET}"
+xattr -d com.apple.quarantine mymind mymind-mcp 2>/dev/null || true
+chmod +x mymind mymind-mcp
+sudo mv mymind mymind-mcp /usr/local/bin/
+mymind version
+```
+
+macOS Intel:
+
+```bash
+VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+ASSET_VERSION="${VERSION#v}"
+ASSET="mymind_${ASSET_VERSION}_darwin_amd64.tar.gz"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
+grep " ${ASSET}$" checksums.txt | shasum -a 256 --check
+tar -xzf "${ASSET}"
+xattr -d com.apple.quarantine mymind mymind-mcp 2>/dev/null || true
+chmod +x mymind mymind-mcp
+sudo mv mymind mymind-mcp /usr/local/bin/
+mymind version
+```
+
+Linux x86_64:
+
+```bash
+VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+ASSET_VERSION="${VERSION#v}"
+ASSET="mymind_${ASSET_VERSION}_linux_amd64.tar.gz"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
+grep " ${ASSET}$" checksums.txt | sha256sum --check
+tar -xzf "${ASSET}"
+chmod +x mymind mymind-mcp
+sudo mv mymind mymind-mcp /usr/local/bin/
+mymind version
+```
+
+Linux ARM64:
+
+```bash
+VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/nawwwal/mymind/releases/latest | sed 's#.*/tag/##')"
+ASSET_VERSION="${VERSION#v}"
+ASSET="mymind_${ASSET_VERSION}_linux_arm64.tar.gz"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/${ASSET}"
+curl -fLO "https://github.com/nawwwal/mymind/releases/download/${VERSION}/checksums.txt"
+grep " ${ASSET}$" checksums.txt | sha256sum --check
+tar -xzf "${ASSET}"
+chmod +x mymind mymind-mcp
+sudo mv mymind mymind-mcp /usr/local/bin/
+mymind version
+```
+
+Windows PowerShell:
+
+```powershell
+$release = Invoke-RestMethod https://api.github.com/repos/nawwwal/mymind/releases/latest
+$version = $release.tag_name
+$assetVersion = $version -replace '^v', ''
+$asset = "mymind_${assetVersion}_windows_amd64.zip"
+Invoke-WebRequest "https://github.com/nawwwal/mymind/releases/download/$version/$asset" -OutFile $asset
+Invoke-WebRequest "https://github.com/nawwwal/mymind/releases/download/$version/checksums.txt" -OutFile checksums.txt
+$expected = ((Select-String -Path checksums.txt -Pattern " $asset$").Line -split ' ')[0].ToUpper()
+$actual = (Get-FileHash $asset -Algorithm SHA256).Hash
+if ($actual -ne $expected) { throw "checksum mismatch for $asset" }
+Expand-Archive $asset -DestinationPath "$HOME\bin\mymind" -Force
+$env:Path = "$HOME\bin\mymind;$env:Path"
+mymind.exe version
+```
 
 <!-- pp-hermes-install-anchor -->
 ## Install for Hermes
