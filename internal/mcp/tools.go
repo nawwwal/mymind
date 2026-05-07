@@ -44,33 +44,35 @@ func RegisterTools(s *server.MCPServer) {
 	)
 	s.AddTool(
 		mcplib.NewTool("search",
-			mcplib.WithDescription("Search mymind objects. Required: q. Optional: limit (default: 20), semantic, semanticBoost, similarTo, rerank."),
+			mcplib.WithDescription("Search mymind objects. Returns useful result summaries with id, score, title, type, URL, tags, and dates when available. Required: q. Optional: limit (default: 20), semantic, semanticBoost, similarTo, rerank, matchesOnly."),
 			mcplib.WithString("q", mcplib.Required(), mcplib.Description("Search query.")),
 			mcplib.WithString("limit", mcplib.Description("Maximum results to return.")),
 			mcplib.WithString("semantic", mcplib.Description("Use semantic search.")),
 			mcplib.WithString("semanticBoost", mcplib.Description("Multiplier applied only when semantic=true.")),
 			mcplib.WithString("similarTo", mcplib.Description("Return objects related to this object ID. Mastermind only.")),
 			mcplib.WithString("rerank", mcplib.Description("Use Mastermind reranking.")),
+			mcplib.WithString("matchesOnly", mcplib.Description("Return raw ranked IDs without fetching object summaries.")),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/search", []mcpParamBinding{{PublicName: "q", WireName: "q", Location: "query"}, {PublicName: "limit", WireName: "limit", Location: "query"}, {PublicName: "semantic", WireName: "semantic", Location: "query"}, {PublicName: "semanticBoost", WireName: "semanticBoost", Location: "query"}, {PublicName: "similarTo", WireName: "similarTo", Location: "query"}, {PublicName: "rerank", WireName: "rerank", Location: "query"}}, []string{}),
+		makeSearchAPIHandler(),
 	)
 	s.AddTool(
 		mcplib.NewTool("mymind-search_search-objects",
-			mcplib.WithDescription("Search with Lucene-inspired syntax, optional semantic search, related-object matching, and Mastermind-only reranking. Required: q. Optional: limit (default: 20), semantic (default: false), semanticBoost (plus 2 more). Returns the SearchObjectsResponse."),
+			mcplib.WithDescription("Compatibility search endpoint. Prefer the search tool. Returns useful result summaries unless matchesOnly is true. Required: q. Optional: limit (default: 20), semantic, semanticBoost, similarTo, rerank, matchesOnly."),
 			mcplib.WithString("q", mcplib.Required(), mcplib.Description("Query string. URL-encode operators such as `&&` and `:`.")),
 			mcplib.WithString("limit", mcplib.Description("Limit")),
 			mcplib.WithString("semantic", mcplib.Description("Semantic")),
 			mcplib.WithString("semanticBoost", mcplib.Description("Multiplier applied only when `semantic=true`.")),
 			mcplib.WithString("similarTo", mcplib.Description("Mastermind-only related-object search. Implies semantic search.")),
 			mcplib.WithString("rerank", mcplib.Description("Mastermind-only cross-encoder rerank. Implies semantic search and caps results at 100.")),
+			mcplib.WithString("matchesOnly", mcplib.Description("Return raw ranked IDs without fetching object summaries.")),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/search", []mcpParamBinding{{PublicName: "q", WireName: "q", Location: "query"}, {PublicName: "limit", WireName: "limit", Location: "query"}, {PublicName: "semantic", WireName: "semantic", Location: "query"}, {PublicName: "semanticBoost", WireName: "semanticBoost", Location: "query"}, {PublicName: "similarTo", WireName: "similarTo", Location: "query"}, {PublicName: "rerank", WireName: "rerank", Location: "query"}}, []string{}),
+		makeSearchAPIHandler(),
 	)
 	s.AddTool(
 		mcplib.NewTool("objects_create",
@@ -382,6 +384,70 @@ type mcpParamBinding struct {
 	PublicName string
 	WireName   string
 	Location   string
+}
+
+func truthyArg(args map[string]any, name string) bool {
+	v, ok := args[name]
+	if !ok {
+		return false
+	}
+	switch value := v.(type) {
+	case bool:
+		return value
+	case string:
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "1", "true", "t", "yes", "y":
+			return true
+		}
+	}
+	return false
+}
+
+func makeSearchAPIHandler() server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		_ = ctx
+		c, err := newMCPClient()
+		if err != nil {
+			return mcplib.NewToolResultError(err.Error()), nil
+		}
+
+		args := req.GetArguments()
+		query, ok := args["q"]
+		if !ok || strings.TrimSpace(fmt.Sprintf("%v", query)) == "" {
+			return mcplib.NewToolResultError("q is required"), nil
+		}
+
+		params := map[string]string{
+			"q": fmt.Sprintf("%v", query),
+		}
+		for _, name := range []string{"limit", "semantic", "semanticBoost", "similarTo", "rerank"} {
+			if v, ok := args[name]; ok {
+				params[name] = fmt.Sprintf("%v", v)
+			}
+		}
+
+		data, err := c.Get("/search", params)
+		if err != nil {
+			return mcplib.NewToolResultError(err.Error()), nil
+		}
+
+		items := cli.ExtractSearchResults(data)
+		mode := "summaries"
+		if truthyArg(args, "matchesOnly") {
+			mode = "matches"
+		} else {
+			items = cli.HydrateSearchResults(c, items)
+			items = cli.SummarizeSearchResults(items)
+		}
+
+		out, _ := json.Marshal(map[string]any{
+			"count":  len(items),
+			"items":  items,
+			"mode":   mode,
+			"source": "live",
+		})
+		return mcplib.NewToolResultText(string(out)), nil
+	}
 }
 
 // makeAPIHandler creates a generic MCP tool handler for an API endpoint.

@@ -4,9 +4,12 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestExtractSearchResults_UnwrapsMatchesEnvelope(t *testing.T) {
@@ -51,5 +54,113 @@ func TestParseStringListFlag_PreservesJSONArrayValues(t *testing.T) {
 	want := []any{"reading", "research"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("expected %#v, got %#v", want, got)
+	}
+}
+
+func TestMergeSearchMatchWithObject_ReturnsUsefulSummary(t *testing.T) {
+	match := json.RawMessage(`{"id":"obj_1","score":53.5}`)
+	object := json.RawMessage(`{
+		"id": "obj_1",
+		"title": "Codex Skills Management Interface",
+		"summary": "A long but useful description.",
+		"entityType": "Image",
+		"source": {"url": "https://example.com/skills"},
+		"tags": [{"name": "Codex"}, {"name": "ai skills"}],
+		"blob": {"path": "private/blob"},
+		"content": {"body": "too much content"}
+	}`)
+
+	got := mergeSearchMatchWithObject(match, object)
+
+	var result map[string]any
+	if err := json.Unmarshal(got, &result); err != nil {
+		t.Fatalf("unmarshal result: %v", err)
+	}
+	for _, key := range []string{"id", "score", "title", "summary", "type", "url", "tags"} {
+		if _, ok := result[key]; !ok {
+			t.Fatalf("expected %q in summarized search result: %#v", key, result)
+		}
+	}
+	for _, key := range []string{"blob", "content"} {
+		if _, ok := result[key]; ok {
+			t.Fatalf("did not expect verbose field %q in summarized search result: %#v", key, result)
+		}
+	}
+}
+
+func TestSummarizeSearchMatch_FlattensDocumentMatches(t *testing.T) {
+	match := json.RawMessage(`{
+		"id": "obj_1",
+		"score": 42,
+		"document": {
+			"id": "obj_1",
+			"title": "A useful result",
+			"source": {"url": "https://example.com"}
+		}
+	}`)
+
+	got := summarizeSearchMatch(match)
+
+	var result map[string]any
+	if err := json.Unmarshal(got, &result); err != nil {
+		t.Fatalf("unmarshal result: %v", err)
+	}
+	if result["title"] != "A useful result" {
+		t.Fatalf("expected flattened title, got %#v", result)
+	}
+	if result["score"].(float64) != 42 {
+		t.Fatalf("expected score to survive, got %#v", result)
+	}
+}
+
+func TestSummarizeSearchMatch_PreservesHydrationFailure(t *testing.T) {
+	match := json.RawMessage(`{
+		"id": "obj_1",
+		"score": 42,
+		"hydration_status": "failed",
+		"hydration_error": "GET /objects/obj_1 returned HTTP 404"
+	}`)
+
+	got := summarizeSearchMatch(match)
+
+	var result map[string]any
+	if err := json.Unmarshal(got, &result); err != nil {
+		t.Fatalf("unmarshal result: %v", err)
+	}
+	if result["hydration_status"] != "failed" {
+		t.Fatalf("expected hydration status to survive: %#v", result)
+	}
+	if result["hydration_error"] == "" {
+		t.Fatalf("expected hydration error to survive: %#v", result)
+	}
+}
+
+func TestOutputSearchResults_AppliesSelect(t *testing.T) {
+	flags := &rootFlags{asJSON: true, selectFields: "id,title,score"}
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	results := []json.RawMessage{json.RawMessage(`{
+		"id": "obj_1",
+		"title": "Useful",
+		"summary": "Hidden by select",
+		"score": 1
+	}`)}
+
+	if err := outputSearchResults(cmd, flags, results, 10, DataProvenance{Source: "live"}); err != nil {
+		t.Fatalf("outputSearchResults returned error: %v", err)
+	}
+
+	var envelope struct {
+		Results []map[string]any `json:"results"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
+		t.Fatalf("unmarshal envelope: %v\n%s", err, out.String())
+	}
+	if _, ok := envelope.Results[0]["summary"]; ok {
+		t.Fatalf("--select should remove summary: %#v", envelope.Results[0])
+	}
+	if envelope.Results[0]["title"] != "Useful" {
+		t.Fatalf("expected selected title: %#v", envelope.Results[0])
 	}
 }

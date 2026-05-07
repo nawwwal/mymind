@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/nawwwal/mymind/internal/client"
 	"github.com/nawwwal/mymind/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -79,6 +80,203 @@ func extractSearchResults(data json.RawMessage) []json.RawMessage {
 	return []json.RawMessage{data}
 }
 
+// ExtractSearchResults unwraps API search responses for agent-facing callers.
+func ExtractSearchResults(data json.RawMessage) []json.RawMessage {
+	return extractSearchResults(data)
+}
+
+func searchResultID(raw json.RawMessage) string {
+	var obj map[string]any
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return ""
+	}
+	if id, ok := obj["id"].(string); ok {
+		return id
+	}
+	if doc, ok := obj["document"].(map[string]any); ok {
+		if id, ok := doc["id"].(string); ok {
+			return id
+		}
+	}
+	return ""
+}
+
+func searchStringField(obj map[string]any, names ...string) string {
+	for _, name := range names {
+		if value, ok := obj[name]; ok {
+			if s, ok := value.(string); ok && strings.TrimSpace(s) != "" {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
+func searchNestedStringField(obj map[string]any, parent string, names ...string) string {
+	nested, ok := obj[parent].(map[string]any)
+	if !ok {
+		return ""
+	}
+	return searchStringField(nested, names...)
+}
+
+func searchTags(obj map[string]any) []string {
+	rawTags, ok := obj["tags"].([]any)
+	if !ok {
+		return nil
+	}
+	tags := make([]string, 0, len(rawTags))
+	for _, rawTag := range rawTags {
+		switch tag := rawTag.(type) {
+		case string:
+			if strings.TrimSpace(tag) != "" {
+				tags = append(tags, tag)
+			}
+		case map[string]any:
+			if name := searchStringField(tag, "name", "title", "label"); name != "" {
+				tags = append(tags, name)
+			}
+		}
+	}
+	return tags
+}
+
+func summarizeSearchResult(matchObj map[string]any, sourceObj map[string]any) map[string]any {
+	result := map[string]any{}
+	for _, key := range []string{"id", "score", "semanticScore"} {
+		if value, ok := matchObj[key]; ok {
+			result[key] = value
+		}
+	}
+	if id, ok := sourceObj["id"]; ok {
+		result["id"] = id
+	}
+	if title := searchStringField(sourceObj, "title", "name", "label"); title != "" {
+		result["title"] = title
+	}
+	if entityType := searchStringField(sourceObj, "entityType", "type", "kind"); entityType != "" {
+		result["type"] = entityType
+	}
+	if summary := searchStringField(sourceObj, "summary", "description"); summary != "" {
+		result["summary"] = truncate(summary, 240)
+	} else if body := searchNestedStringField(sourceObj, "content", "body", "text"); body != "" {
+		result["summary"] = truncate(body, 240)
+	}
+	if url := searchNestedStringField(sourceObj, "source", "url"); url != "" {
+		result["url"] = url
+	} else if url := searchStringField(sourceObj, "url"); url != "" {
+		result["url"] = url
+	}
+	if tags := searchTags(sourceObj); len(tags) > 0 {
+		result["tags"] = tags
+	}
+	for _, key := range []string{"created", "modified", "bumped", "created_at", "updated_at"} {
+		if value, ok := sourceObj[key]; ok {
+			result[key] = value
+		}
+	}
+	if highlights, ok := matchObj["highlights"]; ok {
+		result["highlights"] = highlights
+	}
+	if matched, ok := matchObj["matched"]; ok {
+		result["matched"] = matched
+	}
+	if hydrationStatus, ok := matchObj["hydration_status"]; ok {
+		result["hydration_status"] = hydrationStatus
+	}
+	if hydrationError, ok := matchObj["hydration_error"]; ok {
+		result["hydration_error"] = hydrationError
+	}
+	if len(result) == 0 {
+		return matchObj
+	}
+	return result
+}
+
+func summarizeSearchMatch(match json.RawMessage) json.RawMessage {
+	var matchObj map[string]any
+	if err := json.Unmarshal(match, &matchObj); err != nil {
+		return match
+	}
+	sourceObj := matchObj
+	if doc, ok := matchObj["document"].(map[string]any); ok {
+		sourceObj = doc
+	}
+	summary, err := json.Marshal(summarizeSearchResult(matchObj, sourceObj))
+	if err != nil {
+		return match
+	}
+	return summary
+}
+
+func mergeSearchMatchWithObject(match json.RawMessage, object json.RawMessage) json.RawMessage {
+	var matchObj map[string]any
+	if err := json.Unmarshal(match, &matchObj); err != nil {
+		return summarizeSearchMatch(object)
+	}
+	var objectObj map[string]any
+	if err := json.Unmarshal(object, &objectObj); err != nil {
+		return summarizeSearchMatch(match)
+	}
+	merged, err := json.Marshal(summarizeSearchResult(matchObj, objectObj))
+	if err != nil {
+		return object
+	}
+	return merged
+}
+
+func annotateSearchHydrationError(match json.RawMessage, err error) json.RawMessage {
+	var obj map[string]any
+	if json.Unmarshal(match, &obj) != nil {
+		return match
+	}
+	obj["hydration_status"] = "failed"
+	obj["hydration_error"] = err.Error()
+	annotated, marshalErr := json.Marshal(obj)
+	if marshalErr != nil {
+		return match
+	}
+	return annotated
+}
+
+func hydrateSearchResults(c *client.Client, matches []json.RawMessage) []json.RawMessage {
+	results := make([]json.RawMessage, 0, len(matches))
+	for _, match := range matches {
+		id := searchResultID(match)
+		if id == "" {
+			results = append(results, summarizeSearchMatch(match))
+			continue
+		}
+		object, err := c.Get("/objects/"+id, nil)
+		if err != nil {
+			results = append(results, annotateSearchHydrationError(match, err))
+			continue
+		}
+		results = append(results, mergeSearchMatchWithObject(match, object))
+	}
+	return results
+}
+
+// HydrateSearchResults fetches object details for search matches and returns
+// compact summaries instead of full object payloads.
+func HydrateSearchResults(c *client.Client, matches []json.RawMessage) []json.RawMessage {
+	return hydrateSearchResults(c, matches)
+}
+
+func summarizeSearchResults(results []json.RawMessage) []json.RawMessage {
+	summaries := make([]json.RawMessage, 0, len(results))
+	for _, result := range results {
+		summaries = append(summaries, summarizeSearchMatch(result))
+	}
+	return summaries
+}
+
+// SummarizeSearchResults normalizes raw search matches or objects into the
+// compact result shape used by CLI and MCP search surfaces.
+func SummarizeSearchResults(results []json.RawMessage) []json.RawMessage {
+	return summarizeSearchResults(results)
+}
+
 func newSearchCmd(flags *rootFlags) *cobra.Command {
 	var resourceType string
 	var limit int
@@ -87,6 +285,7 @@ func newSearchCmd(flags *rootFlags) *cobra.Command {
 	var semanticBoost float64
 	var similarTo string
 	var rerank bool
+	var matchesOnly bool
 
 	cmd := &cobra.Command{
 		Use:   "search <query>",
@@ -136,6 +335,9 @@ In local mode: searches locally synced data only.`,
 				if getErr == nil {
 					// Live search succeeded
 					results := extractSearchResults(data)
+					if !matchesOnly {
+						results = hydrateSearchResults(c, results)
+					}
 					prov := DataProvenance{Source: "live"}
 					return outputSearchResults(cmd, flags, results, limit, prov)
 				}
@@ -203,6 +405,7 @@ In local mode: searches locally synced data only.`,
 	cmd.Flags().Float64Var(&semanticBoost, "semantic-boost", 0.0, "Multiplier applied only when --semantic is set")
 	cmd.Flags().StringVar(&similarTo, "similar-to", "", "Return objects related to this object ID on the live API")
 	cmd.Flags().BoolVar(&rerank, "rerank", false, "Use Mastermind reranking on the live API")
+	cmd.Flags().BoolVar(&matchesOnly, "matches-only", false, "Return raw search matches without fetching object details")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/mymind/data.db)")
 
 	return cmd
@@ -212,7 +415,7 @@ In local mode: searches locally synced data only.`,
 func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.RawMessage, limit int, prov DataProvenance) error {
 	// Filter out entries with nil or empty identifier fields.
 	filtered := make([]json.RawMessage, 0, len(results))
-	for _, r := range results {
+	for _, r := range summarizeSearchResults(results) {
 		if !isNilOrEmpty(r) {
 			filtered = append(filtered, r)
 		}
@@ -236,6 +439,11 @@ func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.Ra
 		if err != nil {
 			return err
 		}
+		if flags.selectFields != "" {
+			data = filterFields(data, flags.selectFields)
+		} else if flags.compact {
+			data = compactFields(data)
+		}
 		wrapped, err := wrapWithProvenance(data, prov)
 		if err != nil {
 			return err
@@ -249,8 +457,20 @@ func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.Ra
 	}
 
 	printProvenance(cmd, len(results), prov)
+	var items []map[string]any
+	if json.Unmarshal(mustMarshalSearchResults(results), &items) == nil && len(items) > 0 {
+		return printAutoTable(cmd.OutOrStdout(), items)
+	}
 	for _, r := range results {
 		fmt.Fprintln(cmd.OutOrStdout(), string(r))
 	}
 	return nil
+}
+
+func mustMarshalSearchResults(results []json.RawMessage) json.RawMessage {
+	data, err := json.Marshal(results)
+	if err != nil {
+		return nil
+	}
+	return data
 }

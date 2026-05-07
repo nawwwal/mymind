@@ -19,6 +19,7 @@ func newMymindSearchPromotedCmd(flags *rootFlags) *cobra.Command {
 	var flagSimilarTo string
 	var flagRerank bool
 	var flagAll bool
+	var flagMatchesOnly bool
 
 	cmd := &cobra.Command{
 		Use:         "mymind-search",
@@ -52,6 +53,14 @@ func newMymindSearchPromotedCmd(flags *rootFlags) *cobra.Command {
 			// Unwrap API response envelopes (e.g. {"status":"success","data":[...]})
 			// so output helpers see the inner data, not the wrapper.
 			data = extractResponseData(data)
+			results := extractSearchResults(data)
+			if !flagMatchesOnly {
+				results = hydrateSearchResults(c, results)
+			}
+			data, err = json.Marshal(summarizeSearchResults(results))
+			if err != nil {
+				return err
+			}
 
 			// Print provenance to stderr
 			{
@@ -104,6 +113,7 @@ func newMymindSearchPromotedCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&flagSimilarTo, "similar-to", "", "Mastermind-only related-object search. Implies semantic search.")
 	cmd.Flags().BoolVar(&flagRerank, "rerank", false, "Mastermind-only cross-encoder rerank. Implies semantic search and caps results at 100.")
 	cmd.Flags().BoolVar(&flagAll, "all", false, "Fetch all pages")
+	cmd.Flags().BoolVar(&flagMatchesOnly, "matches-only", false, "Return raw search matches without fetching object details")
 
 	// Wire sibling endpoints and sub-resources as subcommands
 

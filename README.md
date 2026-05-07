@@ -130,6 +130,8 @@ mymind search "article about memory" --semantic --rerank
 mymind search "design notes" --json
 ```
 
+Search returns useful result summaries: title, score, type, URL, tags, and dates when mymind has them. Use `--matches-only` when you only want raw ranked IDs.
+
 ### Save a link
 
 ```bash
@@ -182,7 +184,7 @@ Use `--agent` when another tool is calling `mymind`.
 
 ```bash
 mymind search "renewal notes" --agent
-mymind objects list --agent --select id,title,url
+mymind search "renewal notes" --agent --select id,title,url,score
 ```
 
 Useful flags:

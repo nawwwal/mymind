@@ -577,9 +577,12 @@ func compactFields(data json.RawMessage) json.RawMessage {
 func compactListFields(items []map[string]any) json.RawMessage {
 	keepFields := map[string]bool{
 		"id": true, "name": true, "title": true, "identifier": true,
+		"summary": true, "score": true, "semanticScore": true,
+		"hydration_status": true, "hydration_error": true,
 		"status": true, "state": true, "type": true, "priority": true,
-		"url": true, "email": true, "key": true,
+		"url": true, "email": true, "key": true, "tags": true,
 		"created_at": true, "updated_at": true, "createdAt": true, "updatedAt": true,
+		"created": true, "modified": true, "bumped": true,
 	}
 
 	filtered := make([]map[string]any, 0, len(items))
