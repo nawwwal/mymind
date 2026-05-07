@@ -36,14 +36,13 @@ That is it.
 ## Install with Homebrew
 
 ```bash
-brew tap nawwwal/whimsies
-brew install mymind
+brew install nawwwal/whimsies/mymind
 ```
 
 Update later with:
 
 ```bash
-brew upgrade mymind
+brew upgrade nawwwal/whimsies/mymind
 ```
 
 ## Use with agents

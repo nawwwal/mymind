@@ -12,7 +12,7 @@
 - OpenAPI source: `.agents/generated/mymind.openapi.yaml`
 - Human API notes: `.agents/mymind-openapi-spec.md`
 - Release config: `.goreleaser.yaml`
-- Homebrew tap target: `nawwwal/homebrew-whimsies`, installed by users as `brew tap nawwwal/whimsies && brew install mymind`
+- Homebrew tap target: `nawwwal/homebrew-whimsies`, installed by users as `brew install nawwwal/whimsies/mymind`
 
 ## Build And Verify
 
@@ -62,7 +62,7 @@ mymind search "design notes" --agent
 
 Use `--dry-run` before writes when exploring. Destructive or mutating operations should use explicit confirmation flags such as `--yes` when required.
 
-For MCP docs, prefer the installer script, Homebrew (`brew tap nawwwal/whimsies && brew install mymind`), or pre-built binaries. Do not tell normal users to `go install .../cmd/mymind-mcp@latest`; MCP users should not need Go.
+For MCP docs, prefer the installer script, Homebrew (`brew install nawwwal/whimsies/mymind`), or pre-built binaries. Do not tell normal users to `go install .../cmd/mymind-mcp@latest`; MCP users should not need Go.
 
 ## Release
 
