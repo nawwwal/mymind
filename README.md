@@ -37,7 +37,8 @@ curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | \
 Install both `mymind` and `mymind-mcp` with:
 
 ```bash
-brew install nawwwal/whimsies/mymind
+brew tap nawwwal/whimsies
+brew install mymind
 ```
 
 ### Go developers only
@@ -62,7 +63,7 @@ make build-all
 Homebrew install:
 
 ```bash
-brew upgrade nawwwal/whimsies/mymind
+brew upgrade mymind
 ```
 
 Install-script install:
@@ -326,7 +327,8 @@ Then invoke `/mymind <query>` in Claude Code. The skill is the most efficient pa
 If you'd rather register this CLI as an MCP server in Claude Code, install `mymind` first with Homebrew or a pre-built binary. That installs `mymind-mcp` too.
 
 ```bash
-brew install nawwwal/whimsies/mymind
+brew tap nawwwal/whimsies
+brew install mymind
 ```
 
 Then register it:
@@ -344,7 +346,8 @@ Codex supports MCP servers in the CLI and IDE extension using the same `~/.codex
 Install mymind without Go:
 
 ```bash
-brew install nawwwal/whimsies/mymind
+brew tap nawwwal/whimsies
+brew install mymind
 ```
 
 Then add the MCP server:
@@ -396,7 +399,8 @@ Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple S
 If you can't use the MCPB bundle (older Claude Desktop, unsupported platform), install `mymind` with Homebrew or a pre-built binary and configure it manually.
 
 ```bash
-brew install nawwwal/whimsies/mymind
+brew tap nawwwal/whimsies
+brew install mymind
 ```
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
