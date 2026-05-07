@@ -158,23 +158,6 @@ json_configure_mcp() {
   file="$1"
   command_path="$2"
   mkdir -p "$(dirname "$file")"
-  if [ ! -f "$file" ]; then
-    cat >"$file" <<EOF
-{
-  "mcpServers": {
-    "mymind": {
-      "command": "${command_path}",
-      "env": {
-        "MYMIND_KID": "${KID}",
-        "MYMIND_SECRET": "${SECRET}"
-      }
-    }
-  }
-}
-EOF
-    chmod 600 "$file" 2>/dev/null || true
-    return
-  fi
   if has python3; then
     python3 - "$file" "$command_path" "$KID" "$SECRET" <<'PY'
 import json
@@ -186,9 +169,13 @@ command = sys.argv[2]
 kid = sys.argv[3]
 secret = sys.argv[4]
 
-try:
-    data = json.loads(path.read_text())
-except Exception:
+if path.exists():
+    try:
+        data = json.loads(path.read_text())
+    except Exception as exc:
+        print(f"invalid JSON in {path}: {exc}", file=sys.stderr)
+        sys.exit(1)
+else:
     data = {}
 
 servers = data.setdefault("mcpServers", {})
@@ -203,7 +190,7 @@ path.write_text(json.dumps(data, indent=2) + "\n")
 PY
     chmod 600 "$file" 2>/dev/null || true
   else
-    fail "$file already exists; install python3 or add the mymind MCP config manually"
+    fail "python3 is required to safely write $file; install python3 or add the mymind MCP config manually"
   fi
 }
 

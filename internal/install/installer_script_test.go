@@ -1,6 +1,7 @@
 package install
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -219,6 +220,64 @@ func TestInstallerCredentialPrecedenceRunsInShell(t *testing.T) {
 	}
 }
 
+func TestInstallerJSONConfigureMCPWritesFreshConfigWithEscapedValues(t *testing.T) {
+	requirePython3(t)
+	file := filepath.Join(t.TempDir(), "mcp.json")
+	commandPath := filepath.Join(t.TempDir(), `mymind "quoted" mcp`)
+	kid := `kid "quoted"`
+	secret := `secret \ quoted`
+
+	output, err := runJSONConfigureMCP(t, file, commandPath, kid, secret)
+	if err != nil {
+		t.Fatalf("json_configure_mcp failed: %v\n%s", err, output)
+	}
+
+	var data struct {
+		MCPServers map[string]struct {
+			Command string            `json:"command"`
+			Env     map[string]string `json:"env"`
+		} `json:"mcpServers"`
+	}
+	raw, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &data); err != nil {
+		t.Fatalf("fresh MCP config is invalid JSON: %v\n%s", err, raw)
+	}
+	server := data.MCPServers["mymind"]
+	if server.Command != commandPath {
+		t.Fatalf("command = %q, want %q", server.Command, commandPath)
+	}
+	if server.Env["MYMIND_KID"] != kid || server.Env["MYMIND_SECRET"] != secret {
+		t.Fatalf("env = %#v, want kid/secret preserved", server.Env)
+	}
+}
+
+func TestInstallerJSONConfigureMCPRejectsInvalidExistingJSON(t *testing.T) {
+	requirePython3(t)
+	file := filepath.Join(t.TempDir(), "mcp.json")
+	original := []byte("{not valid json\n")
+	if err := os.WriteFile(file, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	output, err := runJSONConfigureMCP(t, file, "/tmp/mymind-mcp", "kid", "secret")
+	if err == nil {
+		t.Fatalf("json_configure_mcp succeeded for invalid existing JSON:\n%s", output)
+	}
+	if !strings.Contains(output, "invalid JSON") {
+		t.Fatalf("failure should name invalid JSON, got:\n%s", output)
+	}
+	after, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(original) {
+		t.Fatalf("invalid existing JSON was modified:\n%s", after)
+	}
+}
+
 func TestInstallerMenuSupportsRecommendedChooseSkipAndEnvModes(t *testing.T) {
 	script := readInstallerScript(t)
 
@@ -314,6 +373,45 @@ printf 'CREDENTIALS_FROM_CONFIG=%s\n' "$CREDENTIALS_FROM_CONFIG"
 		t.Fatalf("credential harness failed: %v\n%s", err, output)
 	}
 	return string(output)
+}
+
+func runJSONConfigureMCP(t *testing.T, file, commandPath, kid, secret string) (string, error) {
+	t.Helper()
+	harness := installerHelperPrelude(t) + `
+json_configure_mcp "$TEST_MCP_FILE" "$TEST_COMMAND_PATH"
+`
+	path := filepath.Join(t.TempDir(), "json-configure-harness.sh")
+	if err := os.WriteFile(path, []byte(harness), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("sh", path)
+	cmd.Env = append(os.Environ(),
+		"TEST_MCP_FILE="+file,
+		"TEST_COMMAND_PATH="+commandPath,
+		"MYMIND_KID="+kid,
+		"MYMIND_SECRET="+secret,
+	)
+	output, err := cmd.CombinedOutput()
+	return string(output), err
+}
+
+func installerHelperPrelude(t *testing.T) string {
+	t.Helper()
+	script := readInstallerScript(t)
+	marker := "\nneed curl\n"
+	idx := strings.Index(script, marker)
+	if idx < 0 {
+		t.Fatalf("installer missing install-body marker %q", marker)
+	}
+	return script[:idx]
+}
+
+func requirePython3(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 is required for JSON-backed installer config tests")
+	}
 }
 
 func runShellCheck(t *testing.T, args ...string) {
