@@ -38,6 +38,8 @@ jobs:
             work="dist/mcpb/${platform}"
             mkdir -p "${work}/bin"
             cp manifest.json "${work}/manifest.json"
+            sed -i.bak "s/\"version\": \".*\"/\"version\": \"${version}\"/" "${work}/manifest.json"
+            rm "${work}/manifest.json.bak"
             if [[ "${platform}" == windows_* ]]; then
               cp "dist/mymind-mcp_${target}/mymind-mcp.exe" "${work}/bin/mymind-mcp.exe"
             else
