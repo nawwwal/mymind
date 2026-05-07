@@ -231,24 +231,13 @@ case "$os" in
   Darwin)
     case "$arch" in
       arm64) platform="macos_apple_silicon" ;;
-      x86_64) platform="macos_intel" ;;
+      x86_64) fail "prebuilt releases are Apple Silicon only on macOS. Build from source on Intel Mac." ;;
       *) fail "unsupported macOS architecture: $arch" ;;
     esac
     checksum_cmd="shasum -a 256 --check"
     ;;
   Linux)
-    case "$arch" in
-      x86_64|amd64) platform="linux_x64" ;;
-      aarch64|arm64) platform="linux_arm64" ;;
-      *) fail "unsupported Linux architecture: $arch" ;;
-    esac
-    if has sha256sum; then
-      checksum_cmd="sha256sum --check"
-    elif has shasum; then
-      checksum_cmd="shasum -a 256 --check"
-    else
-      fail "missing required checksum command: sha256sum or shasum"
-    fi
+    fail "prebuilt releases are macOS Apple Silicon only. Build from source on Linux."
     ;;
   *)
     fail "unsupported OS: $os"

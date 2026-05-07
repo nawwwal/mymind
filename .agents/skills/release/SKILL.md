@@ -21,7 +21,7 @@ Normal users install both through:
 brew install nawwwal/whimsies/mymind
 ```
 
-Do not use the old npm release flow. This is a GoReleaser + GitHub Release + Homebrew tap release.
+Do not use the old npm release flow. This is a GoReleaser + GitHub Release + explicit Homebrew tap release.
 
 ## Source Of Truth
 
@@ -132,19 +132,13 @@ Required release assets:
 - `checksums.txt`
 - CLI archives:
   - `mymind_X.Y.Z_macos_apple_silicon.tar.gz`
-  - `mymind_X.Y.Z_macos_intel.tar.gz`
-  - `mymind_X.Y.Z_linux_x64.tar.gz`
-  - `mymind_X.Y.Z_linux_arm64.tar.gz`
   - `mymind_X.Y.Z_windows_x64.zip`
-  - `mymind_X.Y.Z_windows_arm64.zip`
 - MCPB bundles:
   - `mymind-mcp_X.Y.Z_macos_apple_silicon.mcpb`
-  - `mymind-mcp_X.Y.Z_macos_intel.mcpb`
   - `mymind-mcp_X.Y.Z_windows_x64.mcpb`
-  - `mymind-mcp_X.Y.Z_windows_arm64.mcpb`
 - `mcpb-checksums.txt`
 
-Linux MCPB is intentionally not shipped because Claude Desktop MCPB support is macOS/Windows.
+Linux, Intel Mac, and Windows ARM assets are intentionally not shipped. The release matrix is Apple Silicon macOS plus Windows x64.
 
 ## Homebrew Verification
 
@@ -207,13 +201,22 @@ GITHUB_TOKEN="$(gh auth token)" goreleaser release --clean
 
 Then build/upload MCPB bundles using the same logic as `.github/workflows/release.yml`, or rerun the workflow after fixing it.
 
-If GoReleaser generated the Homebrew formula but did not update the tap:
+If the workflow publishes the GitHub release but Homebrew is stale, the tap update step probably failed. The active formula path is `Formula/mymind.rb`; a root-level `mymind.rb` is ignored by `brew install nawwwal/whimsies/mymind`.
 
 ```sh
 tap_repo="$(brew --repo nawwwal/whimsies)"
-cp dist/homebrew/mymind.rb "$tap_repo/Formula/mymind.rb"
+version="X.Y.Z"
+curl -fsSL "https://github.com/nawwwal/mymind/releases/download/v${version}/checksums.txt" -o /tmp/mymind-checksums.txt
+sha="$(awk -v asset="mymind_${version}_macos_apple_silicon.tar.gz" '$2 == asset {print $1}' /tmp/mymind-checksums.txt)"
+sed -i.bak \
+  -e "s/version \".*\"/version \"${version}\"/" \
+  -e "s#releases/download/v[0-9.]*/mymind_[0-9.]*_macos_apple_silicon.tar.gz#releases/download/v${version}/mymind_${version}_macos_apple_silicon.tar.gz#" \
+  -e "s/sha256 \".*\"/sha256 \"${sha}\"/" \
+  "$tap_repo/Formula/mymind.rb"
+rm "$tap_repo/Formula/mymind.rb.bak" "$tap_repo/mymind.rb" 2>/dev/null || true
 git -C "$tap_repo" diff -- Formula/mymind.rb
 git -C "$tap_repo" add Formula/mymind.rb
+git -C "$tap_repo" rm -f mymind.rb 2>/dev/null || true
 git -C "$tap_repo" commit -m "Update mymind to X.Y.Z"
 git -C "$tap_repo" push origin main
 ```
@@ -241,7 +244,7 @@ git ls-remote --tags origin 'v*'
 - `main` is pushed.
 - `vX.Y.Z` tag exists remotely.
 - GitHub release `vX.Y.Z` exists and is latest.
-- Required CLI archives and MCPB bundles are present.
+- Required Apple Silicon macOS and Windows x64 CLI archives and MCPB bundles are present.
 - Homebrew tap shows `stable X.Y.Z`.
 - `brew fetch --formula nawwwal/whimsies/mymind` succeeds.
 - Installed `mymind version` prints `X.Y.Z`.

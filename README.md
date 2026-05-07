@@ -82,7 +82,7 @@ Claude Desktop will ask for:
 - `MYMIND_KID`
 - `MYMIND_SECRET`
 
-MCPB bundles are published for macOS and Windows.
+MCPB bundles are published for Apple Silicon macOS and Windows x64.
 
 ## Use with Claude Code
 
@@ -210,17 +210,12 @@ mymind <command> --help
 
 Download `mymind` and `mymind-mcp` from the [latest release](https://github.com/nawwwal/mymind/releases/latest).
 
+Pre-built archives are published for Apple Silicon macOS and Windows x64.
+
 On macOS:
 
 ```bash
 xattr -d com.apple.quarantine mymind mymind-mcp 2>/dev/null || true
-chmod +x mymind mymind-mcp
-sudo mv mymind mymind-mcp /usr/local/bin/
-```
-
-On Linux:
-
-```bash
 chmod +x mymind mymind-mcp
 sudo mv mymind mymind-mcp /usr/local/bin/
 ```

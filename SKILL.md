@@ -208,9 +208,9 @@ Core MCP tools:
 MCP `search` returns summary objects by default. Use `matchesOnly=true` only for
 raw ranked IDs.
 
-Claude Desktop users can install the `.mcpb` bundle from the latest GitHub
-release. Codex, Claude Code, and Cursor users should use the installer with
-`MYMIND_SETUP_MCP`.
+Claude Desktop users on Apple Silicon macOS or Windows x64 can install the
+`.mcpb` bundle from the latest GitHub release. Codex, Claude Code, and Cursor
+users should use the installer with `MYMIND_SETUP_MCP`.
 
 ## Argument parsing
 

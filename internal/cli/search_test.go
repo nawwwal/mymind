@@ -12,6 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func mustJSON(v any) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
+
 func TestExtractSearchResults_UnwrapsMatchesEnvelope(t *testing.T) {
 	data := json.RawMessage(`{
 		"elapsed": 0,
@@ -58,11 +66,12 @@ func TestParseStringListFlag_PreservesJSONArrayValues(t *testing.T) {
 }
 
 func TestMergeSearchMatchWithObject_ReturnsUsefulSummary(t *testing.T) {
+	fullSummary := "A long but useful description that must not be truncated because search results are the first place agents decide whether an object is relevant. Keeping the complete saved summary is more useful than forcing every agent to perform a second get call just to understand the result."
 	match := json.RawMessage(`{"id":"obj_1","score":53.5}`)
 	object := json.RawMessage(`{
 		"id": "obj_1",
 		"title": "Codex Skills Management Interface",
-		"summary": "A long but useful description.",
+		"summary": ` + mustJSON(fullSummary) + `,
 		"entityType": "Image",
 		"source": {"url": "https://example.com/skills"},
 		"tags": [{"name": "Codex"}, {"name": "ai skills"}],
@@ -85,6 +94,13 @@ func TestMergeSearchMatchWithObject_ReturnsUsefulSummary(t *testing.T) {
 		if _, ok := result[key]; ok {
 			t.Fatalf("did not expect verbose field %q in summarized search result: %#v", key, result)
 		}
+	}
+	if result["summary"] != fullSummary {
+		t.Fatalf("expected full summary to survive, got %#v", result["summary"])
+	}
+	tags, ok := result["tags"].([]any)
+	if !ok || len(tags) != 2 || tags[0] != "Codex" || tags[1] != "ai skills" {
+		t.Fatalf("expected full tag list to survive, got %#v", result["tags"])
 	}
 }
 

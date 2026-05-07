@@ -158,7 +158,7 @@ func summarizeSearchResult(matchObj map[string]any, sourceObj map[string]any) ma
 		result["type"] = entityType
 	}
 	if summary := searchStringField(sourceObj, "summary", "description"); summary != "" {
-		result["summary"] = truncate(summary, 240)
+		result["summary"] = summary
 	} else if body := searchNestedStringField(sourceObj, "content", "body", "text"); body != "" {
 		result["summary"] = truncate(body, 240)
 	}
@@ -346,6 +346,9 @@ needs the raw ranked IDs from the search endpoint.`,
 					// Live search succeeded
 					results := extractSearchResults(data)
 					if !matchesOnly {
+						if wantsHumanTable(cmd.OutOrStdout(), flags) {
+							fmt.Fprintf(cmd.ErrOrStderr(), "Fetching result details...\n")
+						}
 						results = hydrateSearchResults(c, results)
 					}
 					prov := DataProvenance{Source: "live"}
