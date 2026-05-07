@@ -60,7 +60,11 @@ mymind update
 ```
 
 The updater detects Homebrew, curl, source, and unknown installs. Prefer it over
-rerunning install commands when mymind is already present.
+rerunning install commands for supported live update paths.
+
+For curl installs, use `mymind update --check` or `mymind update --dry-run` to
+inspect the install. Rerun the repeat-safe installer for actual binary
+replacement until curl live updates ship.
 
 Users should not need Go to install MCP. Only use `go install` if the user is a
 Go developer and asks for source-based installation.
