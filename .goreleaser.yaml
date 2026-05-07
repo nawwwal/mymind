@@ -45,6 +45,7 @@ brews:
     repository:
       owner: nawwwal
       name: homebrew-whimsies
+    directory: Formula
     homepage: "https://github.com/nawwwal/mymind"
     description: "The mymind API uses signed per-request JWT bearer tokens. Objects are saved URLs,
 notes, images, documents, videos, or files. Objects can have tags, spaces, notes,
