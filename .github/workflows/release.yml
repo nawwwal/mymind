@@ -28,6 +28,7 @@ jobs:
             exit 1
           }
       - uses: goreleaser/goreleaser-action@v6
+        id: goreleaser
         with:
           distribution: goreleaser
           version: latest
@@ -71,3 +72,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${GITHUB_REF_NAME}" dist/mcpb/*.mcpb dist/mcpb-checksums.txt --clobber
+      - name: Clean partial release on failure
+        if: ${{ failure() && steps.goreleaser.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "${GITHUB_REF_NAME}" --yes --cleanup-tag || true
