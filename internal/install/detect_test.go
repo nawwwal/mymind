@@ -58,6 +58,9 @@ func TestDetectInstallMethodPrefersHomebrew(t *testing.T) {
 		},
 		Run: fakeRunner{outputs: map[string]CommandResult{
 			"brew info nawwwal/whimsies/mymind": {Stdout: "mymind: stable 1.3.4\n"},
+			"brew list --formula nawwwal/whimsies/mymind": {
+				Stdout: "/opt/homebrew/Cellar/mymind/1.3.4/bin/mymind\n",
+			},
 		}},
 		Env: map[string]string{},
 	})
@@ -78,12 +81,35 @@ func TestDetectInstallMethodFindsIntelHomebrew(t *testing.T) {
 		},
 		Run: fakeRunner{outputs: map[string]CommandResult{
 			"brew info nawwwal/whimsies/mymind": {Stdout: "mymind: stable 1.3.4\n"},
+			"brew list --formula nawwwal/whimsies/mymind": {
+				Stdout: "/usr/local/Cellar/mymind/1.3.4/bin/mymind\n",
+			},
 		}},
 		Env: map[string]string{},
 	})
 
 	if result.Method != MethodHomebrew {
 		t.Fatalf("method = %s, want %s", result.Method, MethodHomebrew)
+	}
+}
+
+func TestDetectInstallMethodDoesNotUseAvailableButUninstalledHomebrewFormula(t *testing.T) {
+	result := Detect(DetectOptions{
+		ExecutablePath: "/opt/homebrew/bin/mymind",
+		LookPath: func(name string) (string, error) {
+			if name == "brew" {
+				return "/opt/homebrew/bin/brew", nil
+			}
+			return "", os.ErrNotExist
+		},
+		Run: fakeRunner{outputs: map[string]CommandResult{
+			"brew info nawwwal/whimsies/mymind": {Stdout: "Not installed\nFrom: https://github.com/nawwwal/homebrew-whimsies\n"},
+		}},
+		Env: map[string]string{},
+	})
+
+	if result.Method == MethodHomebrew {
+		t.Fatalf("method = %s, want non-homebrew for available but uninstalled formula", result.Method)
 	}
 }
 

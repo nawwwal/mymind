@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const homebrewFormula = "nawwwal/whimsies/mymind"
+
 type Method string
 
 const (
@@ -95,8 +97,10 @@ func isHomebrewInstall(path string, opts DetectOptions) bool {
 	if !looksHomebrewOwnedPath(path, brewPath) {
 		return false
 	}
-	res := opts.Run.Run("brew", "info", "nawwwal/whimsies/mymind")
-	return res.Err == nil
+	if res := opts.Run.Run("brew", "info", homebrewFormula); res.Err != nil {
+		return false
+	}
+	return hasInstalledHomebrewFormula(path, brewPath, opts.Run)
 }
 
 func looksHomebrewOwnedPath(path, brewPath string) bool {
@@ -106,6 +110,46 @@ func looksHomebrewOwnedPath(path, brewPath string) bool {
 		return true
 	}
 	return strings.HasPrefix(path, "/usr/local/") && strings.HasPrefix(brewPath, "/usr/local/")
+}
+
+func hasInstalledHomebrewFormula(path, brewPath string, runner Runner) bool {
+	if res := runner.Run("brew", "list", "--formula", homebrewFormula); res.Err == nil {
+		return true
+	}
+	res := runner.Run("brew", "--prefix", homebrewFormula)
+	if res.Err != nil {
+		return false
+	}
+	prefix := strings.TrimSpace(res.Stdout)
+	if prefix == "" {
+		return false
+	}
+	return pathRelatesToHomebrewPrefix(path, brewPath, prefix)
+}
+
+func pathRelatesToHomebrewPrefix(path, brewPath, prefix string) bool {
+	path = cleanPath(path)
+	brewPath = cleanPath(brewPath)
+	prefix = cleanPath(prefix)
+	if isWithin(path, prefix) {
+		return true
+	}
+	return homebrewRoot(path) != "" && homebrewRoot(path) == homebrewRoot(brewPath) && homebrewRoot(path) == homebrewRoot(prefix)
+}
+
+func isWithin(path, root string) bool {
+	rel, err := filepath.Rel(root, path)
+	return err == nil && rel != "." && !strings.HasPrefix(rel, "..")
+}
+
+func homebrewRoot(path string) string {
+	path = cleanPath(path)
+	for _, root := range []string{"/opt/homebrew", "/usr/local"} {
+		if path == root || strings.HasPrefix(path, root+"/") {
+			return root
+		}
+	}
+	return ""
 }
 
 func isSourcePath(path string, env map[string]string) bool {
