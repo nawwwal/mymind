@@ -83,6 +83,10 @@ func newSearchCmd(flags *rootFlags) *cobra.Command {
 	var resourceType string
 	var limit int
 	var dbPath string
+	var semantic bool
+	var semanticBoost float64
+	var similarTo string
+	var rerank bool
 
 	cmd := &cobra.Command{
 		Use:   "search <query>",
@@ -103,6 +107,9 @@ In local mode: searches locally synced data only.`,
   # Search a specific resource type locally
   mymind search "critical" --type transactions --data-source local
 
+  # Use semantic search and reranking on the live API
+  mymind search "article about memory" --semantic --rerank
+
   # JSON output for piping
   mymind search "critical" --json --limit 20`,
 		Annotations: map[string]string{"mcp:hidden": "true"},
@@ -117,9 +124,15 @@ In local mode: searches locally synced data only.`,
 				if err != nil {
 					return err
 				}
-				data, getErr := c.Get("/search", map[string]string{
-					"q": query,
-				})
+				queryParams := map[string]string{
+					"q":             query,
+					"limit":         fmt.Sprintf("%d", limit),
+					"semantic":      fmt.Sprintf("%t", semantic),
+					"semanticBoost": fmt.Sprintf("%v", semanticBoost),
+					"similarTo":     similarTo,
+					"rerank":        fmt.Sprintf("%t", rerank),
+				}
+				data, getErr := c.Get("/search", queryParams)
 				if getErr == nil {
 					// Live search succeeded
 					results := extractSearchResults(data)
@@ -186,6 +199,10 @@ In local mode: searches locally synced data only.`,
 
 	cmd.Flags().StringVar(&resourceType, "type", "", "Filter by resource type")
 	cmd.Flags().IntVar(&limit, "limit", 50, "Maximum results to return")
+	cmd.Flags().BoolVar(&semantic, "semantic", false, "Use semantic search on the live API")
+	cmd.Flags().Float64Var(&semanticBoost, "semantic-boost", 0.0, "Multiplier applied only when --semantic is set")
+	cmd.Flags().StringVar(&similarTo, "similar-to", "", "Return objects related to this object ID on the live API")
+	cmd.Flags().BoolVar(&rerank, "rerank", false, "Use Mastermind reranking on the live API")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/mymind/data.db)")
 
 	return cmd

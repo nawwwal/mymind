@@ -15,14 +15,16 @@ brew tap nawwwal/mymind
 brew install mymind
 ```
 
-### Go
+### Go developers only
 
-Install directly from the source repo:
+Install directly from the source repo if you already have Go:
 
 ```bash
 go install github.com/nawwwal/mymind/cmd/mymind@latest
 go install github.com/nawwwal/mymind/cmd/mymind-mcp@latest
 ```
+
+Most users do not need Go. Homebrew and the pre-built release archives install both `mymind` and `mymind-mcp`.
 
 ### From Source
 
@@ -190,12 +192,19 @@ Manage entities
 - **`mymind entities get-entity`** - WIP/coming soon. The docs say type identifiers, property shapes, and this endpoint
 may change before launch. Do not ship production integrations against this path yet.
 
-### mymind-search
+### search
 
-Manage mymind search
+Search mymind
 
-- **`mymind mymind-search search-objects`** - Search with Lucene-inspired syntax, optional semantic search, related-object matching,
-and Mastermind-only reranking.
+- **`mymind search "query"`** - Search with Lucene-inspired syntax, optional semantic search, related-object matching, and Mastermind-only reranking.
+
+Examples:
+
+```bash
+mymind search "reading list" --json
+mymind search "article about memory" --semantic --rerank --json
+mymind search "design notes" --data-source local
+```
 
 ### objects
 
@@ -275,10 +284,11 @@ Then invoke `/mymind <query>` in Claude Code. The skill is the most efficient pa
 <details>
 <summary>Use as an MCP server in Claude Code (advanced)</summary>
 
-If you'd rather register this CLI as an MCP server in Claude Code, install the MCP binary first:
+If you'd rather register this CLI as an MCP server in Claude Code, install `mymind` first with Homebrew or a pre-built binary. That installs `mymind-mcp` too.
 
 ```bash
-go install github.com/nawwwal/mymind/cmd/mymind-mcp@latest
+brew tap nawwwal/mymind
+brew install mymind
 ```
 
 Then register it:
@@ -288,6 +298,54 @@ claude mcp add mymind mymind-mcp -e MYMIND_KID=<your-kid> -e MYMIND_SECRET=<your
 ```
 
 </details>
+
+## Use with Codex
+
+Codex supports MCP servers in the CLI and IDE extension using the same `~/.codex/config.toml` configuration. OpenAI's docs show `codex mcp add` for setup and `codex mcp list` for verification.
+
+Install Codex CLI if needed:
+
+```bash
+npm i -g @openai/codex
+```
+
+Install mymind without Go:
+
+```bash
+brew tap nawwwal/mymind
+brew install mymind
+```
+
+Then add the MCP server:
+
+```bash
+codex mcp add mymind \
+  --env MYMIND_KID=your-kid \
+  --env MYMIND_SECRET=your-base64-secret \
+  -- mymind-mcp
+codex mcp list
+```
+
+In Codex, run `/mcp` to confirm the server is active. The main MCP tool is `search`; the older generated tool name `mymind-search_search-objects` is kept only for compatibility.
+
+Manual config, if you prefer editing `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.mymind]
+command = "mymind-mcp"
+
+[mcp_servers.mymind.env]
+MYMIND_KID = "your-kid"
+MYMIND_SECRET = "your-base64-secret"
+```
+
+Useful project instruction for `AGENTS.md`:
+
+```md
+Use the mymind MCP server when you need to search or retrieve my mymind objects. Prefer the `search` tool for discovery, then fetch exact objects only when needed.
+```
+
+References: [Codex CLI](https://developers.openai.com/codex/cli), [Codex MCP](https://developers.openai.com/codex/mcp), [Codex plugins and skills](https://developers.openai.com/codex/plugins).
 
 ## Use with Claude Desktop
 
@@ -304,10 +362,11 @@ Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple S
 <details>
 <summary>Manual JSON config (advanced)</summary>
 
-If you can't use the MCPB bundle (older Claude Desktop, unsupported platform), install the MCP binary and configure it manually.
+If you can't use the MCPB bundle (older Claude Desktop, unsupported platform), install `mymind` with Homebrew or a pre-built binary and configure it manually.
 
 ```bash
-go install github.com/nawwwal/mymind/cmd/mymind-mcp@latest
+brew tap nawwwal/mymind
+brew install mymind
 ```
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):

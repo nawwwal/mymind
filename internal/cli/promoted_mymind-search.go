@@ -23,8 +23,10 @@ func newMymindSearchPromotedCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "mymind-search",
 		Short:       "Search with Lucene-inspired syntax, optional semantic search, related-object matching, and Mastermind-only reranking.",
-		Long:        "Shortcut for 'mymind-search search-objects'. Search with Lucene-inspired syntax, optional semantic search, related-object matching, and Mastermind-only reranking.",
-		Example:     "  mymind mymind-search --q example-value",
+		Long:        "Compatibility alias for 'mymind search <query>'. Prefer 'mymind search'.",
+		Example:     "  mymind search example-value",
+		Hidden:      true,
+		Deprecated:  "use 'mymind search <query>' instead",
 		Annotations: map[string]string{"pp:endpoint": "mymind-search.search-objects", "pp:method": "GET", "pp:path": "/search", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("q") && !flags.dryRun {

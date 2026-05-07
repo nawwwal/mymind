@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/nawwwal/mymind/internal/cli"
 	"github.com/nawwwal/mymind/internal/client"
 	"github.com/nawwwal/mymind/internal/cliutil"
 	"github.com/nawwwal/mymind/internal/config"
 	"github.com/nawwwal/mymind/internal/mcp/cobratree"
 	"github.com/nawwwal/mymind/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -41,6 +41,21 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
 		makeAPIHandler("GET", "/entities/{id}", []mcpParamBinding{{PublicName: "id", WireName: "id", Location: "path"}}, []string{"id"}),
+	)
+	s.AddTool(
+		mcplib.NewTool("search",
+			mcplib.WithDescription("Search mymind objects. Required: q. Optional: limit (default: 20), semantic, semanticBoost, similarTo, rerank."),
+			mcplib.WithString("q", mcplib.Required(), mcplib.Description("Search query.")),
+			mcplib.WithString("limit", mcplib.Description("Maximum results to return.")),
+			mcplib.WithString("semantic", mcplib.Description("Use semantic search.")),
+			mcplib.WithString("semanticBoost", mcplib.Description("Multiplier applied only when semantic=true.")),
+			mcplib.WithString("similarTo", mcplib.Description("Return objects related to this object ID. Mastermind only.")),
+			mcplib.WithString("rerank", mcplib.Description("Use Mastermind reranking.")),
+			mcplib.WithReadOnlyHintAnnotation(true),
+			mcplib.WithDestructiveHintAnnotation(false),
+			mcplib.WithOpenWorldHintAnnotation(true),
+		),
+		makeAPIHandler("GET", "/search", []mcpParamBinding{{PublicName: "q", WireName: "q", Location: "query"}, {PublicName: "limit", WireName: "limit", Location: "query"}, {PublicName: "semantic", WireName: "semantic", Location: "query"}, {PublicName: "semanticBoost", WireName: "semanticBoost", Location: "query"}, {PublicName: "similarTo", WireName: "similarTo", Location: "query"}, {PublicName: "rerank", WireName: "rerank", Location: "query"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("mymind-search_search-objects",

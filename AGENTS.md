@@ -58,7 +58,11 @@ mymind spaces list --agent
 mymind search "design notes" --agent
 ```
 
+`mymind search <query>` is the public search command. Keep generated endpoint names such as `mymind-search` hidden or compatibility-only; do not promote them in docs.
+
 Use `--dry-run` before writes when exploring. Destructive or mutating operations should use explicit confirmation flags such as `--yes` when required.
+
+For MCP docs, prefer packaged installs (`brew install mymind` or pre-built binaries). Do not tell normal users to `go install .../cmd/mymind-mcp@latest`; MCP users should not need Go.
 
 ## Release
 

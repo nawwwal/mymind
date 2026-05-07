@@ -29,7 +29,7 @@ type whichEntry struct {
 var whichIndex = []whichEntry{
 	{Command: "convert content", Description: "Converts between plain text, Markdown, and mymind prose. Source and target formats must differ.", Group: "convert"},
 	{Command: "entities get-entity", Description: "WIP/coming soon. The docs say type identifiers, property shapes, and this endpoint\nmay change before launch. Do not ship production integrations against this path yet.", Group: "entities"},
-	{Command: "mymind-search search-objects", Description: "Search with Lucene-inspired syntax, optional semantic search, related-object matching,\nand Mastermind-only reranking.", Group: "mymind-search"},
+	{Command: "search", Description: "Search with Lucene-inspired syntax, optional semantic search, related-object matching,\nand Mastermind-only reranking.", Group: "search"},
 	{Command: "objects create", Description: "Creates an object from exactly one of `url`, `content`, or multipart `blob`.\nDuplicate URL/content/blob saves return the existing object, refresh `bumped`,\nand respond with 200 instead of 201.", Group: "objects"},
 	{Command: "objects delete", Description: "Soft-deletes an object. Deleted objects are recoverable for 30 days.", Group: "objects"},
 	{Command: "objects get", Description: "Get an object", Group: "objects"},
