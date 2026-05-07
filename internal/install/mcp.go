@@ -1,6 +1,9 @@
 package install
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type MCPServer struct {
 	Command string            `json:"command"`
@@ -16,8 +19,12 @@ func MergeMCPServer(input []byte, server MCPServer) ([]byte, error) {
 		}
 	}
 
-	servers, ok := data["mcpServers"].(map[string]any)
-	if !ok {
+	rawServers, exists := data["mcpServers"]
+	servers, ok := rawServers.(map[string]any)
+	if exists && !ok {
+		return nil, fmt.Errorf("mcpServers must be a JSON object")
+	}
+	if !exists {
 		servers = map[string]any{}
 		data["mcpServers"] = servers
 	}
