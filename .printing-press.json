@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-07T16:58:47.266942Z",
+  "printing_press_version": "4.0.1",
+  "api_name": "mymind",
+  "display_name": "Mymind",
+  "cli_name": "mymind",
+  "owner": "nawwwal",
+  "spec_path": ".agents/generated/mymind.openapi.yaml",
+  "spec_format": "openapi3",
+  "spec_checksum": "sha256:dfd0031941663a2ebef0cbc364ef222839930373804874554ae87cd21f675881",
+  "mcp_binary": "mymind-mcp",
+  "mcp_tool_count": 30,
+  "mcp_ready": "full",
+  "api_version": "0.4.0-alpha",
+  "auth_type": "mymind_hs256_request_jwt",
+  "auth_env_vars": [
+    "MYMIND_KID",
+    "MYMIND_SECRET"
+  ]
+}

@@ -1,50 +1,71 @@
-# AGENTS.md — using `@nawwal/mymind`
+# AGENTS.md — mymind CLI
 
-**Status:** alpha. The mymind API evolves; prefer stable exit codes and JSON envelopes over parsing error message text. API drift is tracked in [.agents/api-feedback.md](.agents/api-feedback.md).
+**Status:** alpha. This repo is now a Printing Press generated Go CLI and MCP server for the mymind API. The old npm/TypeScript package layout no longer applies.
 
-## Install & credentials
+## Project Shape
 
-```sh
-npm install -g @nawwal/mymind
-mymind login --kid YOUR_KID --secret YOUR_SECRET
-# macOS: --store keychain (otherwise ~/.config/mymind/credentials.json)
-# env MYMIND_KID + MYMIND_SECRET is for ephemeral/CI use
-```
+- CLI binary: `mymind`
+- MCP binary: `mymind-mcp`
+- CLI entrypoint: `cmd/mymind`
+- MCP entrypoint: `cmd/mymind-mcp`
+- Shared implementation: `internal/`
+- OpenAPI source: `.agents/generated/mymind.openapi.yaml`
+- Human API notes: `.agents/mymind-openapi-spec.md`
+- Release config: `.goreleaser.yaml`
+- Homebrew tap target: `nawwwal/homebrew-mymind`, installed by users as `brew tap nawwwal/mymind && brew install mymind`
 
-## High-signal commands
-
-```sh
-mymind search --tag reading --json
-mymind objects ls --since 7d --json
-mymind get <object_uid> --json
-mymind save https://example.com/article --yes-cost --json
-pbpaste | mymind note --title "$(date +%F) note" --yes-cost --json
-```
-
-All JSON outputs use `{ "v": 1, "kind": "...", "data": ..., "rateLimit": ..., "warnings": [] }` unless `--compact` is passed.
-
-## Introspection
+## Build And Verify
 
 ```sh
-mymind manifest
-mymind help search
+make build-all
+go test ./...
 ```
 
-## MCP (hosts)
+Useful runtime checks:
 
-After `mymind login`, configure your client to run `mymind mcp`, or use `mymind install`.
+```sh
+mymind doctor --json
+mymind agent-context --json
+```
 
-## Writes & safety
+Printing Press checks:
 
-Destructive or costly actions require explicit flags (`--yes`, `--yes-delete`, `--yes-replace`, `--yes-cost`) unless `MYMIND_AUTO_CONFIRM=1`. See `docs/safety.md`.
+```sh
+printing-press dogfood --dir . --spec .agents/generated/mymind.openapi.yaml
+printing-press scorecard --dir . --spec .agents/generated/mymind.openapi.yaml
+```
 
-## Exit codes
+`printing-press verify-skill` may report canonical section drift because the generated `mymind-pp-cli` naming was intentionally renamed to `mymind`.
 
-Aligned with `src/actions/errors.ts`: `0` ok, `3` auth, `4` not found, `5` rate limit, `6` confirmation required, `7` dry-run preview, `64` upstream error, `141` SIGPIPE.
+## Credentials
 
-## Agent guarantees
+mymind uses request-bound JWT auth. Do not ask users for a static bearer token unless they explicitly know what they are doing.
 
-- `--json`, `--ndjson`, `--compact`, stable exit codes, and committed JSON Schemas are public contracts.
-- Logs and errors go to stderr; command results go to stdout.
-- No telemetry, no auto-update at runtime, and no secret logging.
-- Use `docs/agent-guide.md` for recipes for Codex CLI, GitHub Actions, cron, and shell pipelines.
+```sh
+export MYMIND_KID="..."
+export MYMIND_SECRET="..."
+```
+
+The CLI signs each request with HS256 using `method`, `path`, `iat`, and `exp`.
+
+## Agent Usage
+
+Prefer `--agent` for scripted or agent calls:
+
+```sh
+mymind objects list --agent --select id,title,created
+mymind spaces list --agent
+mymind search "design notes" --agent
+```
+
+Use `--dry-run` before writes when exploring. Destructive or mutating operations should use explicit confirmation flags such as `--yes` when required.
+
+## Release
+
+GoReleaser builds both binaries and updates the Homebrew tap:
+
+```sh
+goreleaser release --clean
+```
+
+The generated MCP manifest is `manifest.json`; release assets should include the CLI archives and MCP bundle assets when available.

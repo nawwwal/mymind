@@ -1,7 +1,0 @@
-{
-  "v": 1,
-  "entries": {
-    "envelope": "docs/output-schemas/envelope.schema.json",
-    "compact": "docs/output-schemas/compact.schema.json"
-  }
-}

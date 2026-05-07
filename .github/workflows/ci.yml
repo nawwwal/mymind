@@ -3,68 +3,16 @@ name: CI
 on:
   pull_request:
   push:
-    branches:
-      - main
-
-permissions:
-  contents: read
+    branches: [main]
 
 jobs:
   test:
-    name: Test Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version:
-          - "22"
-          - "24"
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
-
-      - name: Use npm 11
-        run: |
-          NPM_BIN_DIR="$HOME/.local/npm-bin"
-          mkdir -p "$NPM_BIN_DIR"
-          corepack enable --install-directory "$NPM_BIN_DIR" npm
-          corepack prepare npm@11.12.1 --activate
-          echo "$NPM_BIN_DIR" >> "$GITHUB_PATH"
-          "$NPM_BIN_DIR/npm" --version
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint --if-present
-
-      - name: Typecheck
-        run: npm run typecheck --if-present
-
-      - name: Test
-        run: npm test --if-present
-
-      - name: Build
-        run: npm run build --if-present
-
-      - name: Manifest matches source
-        run: npm run manifest && git diff --exit-code docs/manifest.json
-
-      - name: JSON Schemas match source
-        run: npm run schemas && git diff --exit-code docs/schemas
-
-      - name: Output schemas and CLI reference match source
-        run: npm run output-schemas && npm run cli-reference && git diff --exit-code docs/output-schemas docs/examples docs/cli-reference.md
-
-      - name: Repository guards
-        run: npm run lint:api-feedback
-
-      - name: Check package contents
-        run: npm run pack:check --if-present
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./...
+      - run: make build-all

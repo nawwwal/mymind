@@ -1,127 +1,281 @@
-# @nawwal/mymind
+# Mymind CLI
 
-Unofficial **[mymind](https://access.mymind.com/extensions)** **CLI** and **MCP server** for Node.js. Install it once as `mymind`, log in once, then reuse the same saved credentials from shells, CI, cron, and MCP hosts (`mymind mcp`).
+The mymind API uses signed per-request JWT bearer tokens. Objects are saved URLs,
+notes, images, documents, videos, or files. Objects can have tags, spaces, notes,
+content, blobs, screenshots, and AI-generated metadata.
 
-Repository: [github.com/nawwwal/mymind](https://github.com/nawwwal/mymind).
+## Install
 
----
+### Homebrew
 
-## New here (CLI first)
+Once releases are published, install both `mymind` and `mymind-mcp` with:
 
-**1 — Requirements**
-
-- **Node.js 22+**
-- A mymind **access key** (kid + secret) from  
-  **[access.mymind.com/extensions](https://access.mymind.com/extensions)**  
-  (`MYMIND_KID` = key id, **not** your user id)
-
-**2 — Install the CLI once**
-
-```sh
-npm install -g @nawwal/mymind
-mymind --help
+```bash
+brew tap nawwwal/mymind
+brew install mymind
 ```
 
-**3 — Log in once**
+### Go
 
-Recommended (default: `~/.config/mymind/credentials.json`; macOS can use Keychain):
+Install directly from the source repo:
 
-```sh
-mymind login --kid YOUR_KID --secret YOUR_SECRET
-# macOS: add  --store keychain
+```bash
+go install github.com/nawwwal/mymind/cmd/mymind@latest
+go install github.com/nawwwal/mymind/cmd/mymind-mcp@latest
 ```
 
-After that, `mymind` and `mymind mcp` resolve credentials from the saved store. Use environment variables only for ephemeral or hosted automation:
+### From Source
 
-```sh
-export MYMIND_KID=YOUR_KID
-export MYMIND_SECRET=YOUR_SECRET
+```bash
+make build-all
 ```
 
-**4 — Confirm it works**
+### Pre-built binary
 
-```sh
-mymind auth status --json
-# or
-mymind search --tag reading --json
+Download a pre-built binary for your platform from the [latest release](https://github.com/nawwwal/mymind/releases/latest). On macOS, clear the Gatekeeper quarantine: `xattr -d com.apple.quarantine <binary>`. On Unix, mark it executable: `chmod +x <binary>`.
+
+<!-- pp-hermes-install-anchor -->
+## Install for Hermes
+
+From the Hermes CLI:
+
+```bash
+hermes skills install nawwwal/mymind --force
 ```
 
-Agents and automation should rely on **`--json`**, stable **exit codes**, and the **`manifest`** output — see [AGENTS.md](AGENTS.md) and [docs/agent-guide.md](docs/agent-guide.md).
+Inside a Hermes chat session:
 
----
-
-## Everyday CLI commands
-
-```sh
-mymind search --tag reading --json
-mymind objects ls --since 7d --limit 50 --json
-mymind get <object_uid> --json
+```bash
+/skills install nawwwal/mymind --force
 ```
 
-- Full command list: [docs/cli-reference.md](docs/cli-reference.md) (generated from the CLI manifest)
-- Machine-readable surface: `mymind manifest`
+## Install for OpenClaw
 
----
+Tell your OpenClaw agent (copy this):
 
-## Optional: MCP in your AI app
-
-If you use **Claude Desktop**, **Claude Code**, **Codex**, or **Cursor**, point them at the same package. The **installer** detects common setups and writes config:
-
-```sh
-mymind install
+```
+Install the mymind skill from https://github.com/nawwwal/mymind. The skill defines how its required CLI can be installed.
 ```
 
-Run `mymind login` first so the MCP process can resolve credentials from your saved store. Use `mymind install --dry-run` to preview.
+## Quick Start
 
-Under the hood the host runs the installed **`mymind mcp`** stdio server. Manual JSON/TOML examples: **[docs/client-configs.md](docs/client-configs.md)**. Longer walkthrough: **[docs/installation.md](docs/installation.md)**.
+### 1. Install
 
----
+See [Install](#install) above.
 
-## Other environment variables
+### 2. Set Up Credentials
 
-| Variable | Purpose |
-| --- | --- |
-| `MYMIND_API_BASE` | Override API base URL (only if you know you need this) |
-| `MYMIND_USER_AGENT` | Override default user agent string |
-| `MYMIND_ALLOWED_FILE_ROOTS` | Comma-separated allowlist for local file reads/uploads |
-| `MYMIND_JWT_VALIDITY_SECONDS` | Per-request JWT `exp`−`iat` window in seconds (default **86400**, min **60**, max **604800**). Each HTTP call still mints a **new** token. |
+Create a mymind access key, then store it:
 
-Treat `MYMIND_SECRET` like a password: not in git, not in chat logs.
+```bash
+mymind auth set-key YOUR_KID YOUR_BASE64_SECRET
+```
 
----
+Or set it via environment variable:
 
-## What it covers
+```bash
+export MYMIND_KID="your-kid"
+export MYMIND_SECRET="your-base64-secret"
+```
 
-Objects, spaces, tags, search (with optional semantic/rerank when confirmed), conversion, and the MCP tool set aligned with that surface — not every upstream doc page. **Full table:** [docs/coverage.md](docs/coverage.md).
+### 3. Verify Setup
 
----
+```bash
+mymind doctor
+```
 
-## Safety
+This checks your configuration and credentials.
 
-This project is **unofficial** and **not** endorsed by mymind. It can read and change real account data. Use confirmation flags for destructive or costly operations; see **[docs/safety.md](docs/safety.md)**.
+### 4. Try Your First Command
 
----
+```bash
+mymind objects list
+```
+
+## Usage
+
+Run `mymind --help` for the full command reference and flag list.
+
+## Commands
+
+### convert
+
+Manage convert
+
+- **`mymind convert content`** - Converts between plain text, Markdown, and mymind prose. Source and target formats must differ.
+
+### entities
+
+Manage entities
+
+- **`mymind entities get-entity`** - WIP/coming soon. The docs say type identifiers, property shapes, and this endpoint
+may change before launch. Do not ship production integrations against this path yet.
+
+### mymind-search
+
+Manage mymind search
+
+- **`mymind mymind-search search-objects`** - Search with Lucene-inspired syntax, optional semantic search, related-object matching,
+and Mastermind-only reranking.
+
+### objects
+
+Manage objects
+
+- **`mymind objects create`** - Creates an object from exactly one of `url`, `content`, or multipart `blob`.
+Duplicate URL/content/blob saves return the existing object, refresh `bumped`,
+and respond with 200 instead of 201.
+- **`mymind objects delete`** - Soft-deletes an object. Deleted objects are recoverable for 30 days.
+- **`mymind objects get`** - Get an object
+- **`mymind objects list`** - Returns objects accessible to the authenticated key. If `q` is present, search
+semantics and search credit costs apply. Deleted objects are excluded.
+- **`mymind objects update`** - Update object metadata
+
+### spaces
+
+Manage spaces
+
+- **`mymind spaces create`** - Create a space
+- **`mymind spaces delete`** - Deletes the space; objects inside are not deleted.
+- **`mymind spaces get`** - Get a space
+- **`mymind spaces list`** - List spaces
+- **`mymind spaces update`** - Update a space
+
+### tags
+
+Manage tags
+
+- **`mymind tags list`** - Tags are created implicitly when first used; there is no standalone create tag endpoint.
+
+
+## Output Formats
+
+```bash
+# Human-readable table (default in terminal, JSON when piped)
+mymind objects list
+
+# JSON for scripting and agents
+mymind objects list --json
+
+# Filter to specific fields
+mymind objects list --json --select id,name,status
+
+# Dry run — show the request without sending
+mymind objects list --dry-run
+
+# Agent mode — JSON + compact + no prompts in one flag
+mymind objects list --agent
+```
+
+## Agent Usage
+
+This CLI is designed for AI agent consumption:
+
+- **Non-interactive** - never prompts, every input is a flag
+- **Pipeable** - `--json` output to stdout, errors to stderr
+- **Filterable** - `--select id,name` returns only fields you need
+- **Previewable** - `--dry-run` shows the request without sending
+- **Explicit retries** - add `--idempotent` to create retries and `--ignore-missing` to delete retries when a no-op success is acceptable
+- **Confirmable** - `--yes` for explicit confirmation of destructive actions
+- **Piped input** - write commands can accept structured input when their help lists `--stdin`
+- **Offline-friendly** - sync/search commands can use the local SQLite store when available
+- **Agent-safe by default** - no colors or formatting unless `--human-friendly` is set
+
+Exit codes: `0` success, `2` usage error, `3` not found, `4` auth error, `5` API error, `7` rate limited, `10` config error.
+
+## Use with Claude Code
+
+Install the focused skill — it auto-installs the CLI on first invocation:
+
+```bash
+npx skills add nawwwal/mymind -g
+```
+
+Then invoke `/mymind <query>` in Claude Code. The skill is the most efficient path — Claude Code drives the CLI directly without an MCP server in the middle.
+
+<details>
+<summary>Use as an MCP server in Claude Code (advanced)</summary>
+
+If you'd rather register this CLI as an MCP server in Claude Code, install the MCP binary first:
+
+```bash
+go install github.com/nawwwal/mymind/cmd/mymind-mcp@latest
+```
+
+Then register it:
+
+```bash
+claude mcp add mymind mymind-mcp -e MYMIND_KID=<your-kid> -e MYMIND_SECRET=<your-base64-secret>
+```
+
+</details>
+
+## Use with Claude Desktop
+
+This CLI ships an [MCPB](https://github.com/modelcontextprotocol/mcpb) bundle — Claude Desktop's standard format for one-click MCP extension installs (no JSON config required).
+
+To install:
+
+1. Download the `.mcpb` for your platform from the [latest release](https://github.com/nawwwal/mymind/releases/latest).
+2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
+3. Fill in `MYMIND_KID` and `MYMIND_SECRET` when Claude Desktop prompts you.
+
+Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon (`darwin-arm64`) and Windows (`amd64`, `arm64`); for other platforms, use the manual config below.
+
+<details>
+<summary>Manual JSON config (advanced)</summary>
+
+If you can't use the MCPB bundle (older Claude Desktop, unsupported platform), install the MCP binary and configure it manually.
+
+```bash
+go install github.com/nawwwal/mymind/cmd/mymind-mcp@latest
+```
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "mymind": {
+      "command": "mymind-mcp",
+      "env": {
+        "MYMIND_KID": "<your-kid>",
+        "MYMIND_SECRET": "<your-base64-secret>"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+## Health Check
+
+```bash
+mymind doctor
+```
+
+Verifies configuration, credentials, and connectivity to the API.
+
+## Configuration
+
+Config file: `~/.config/mymind/config.toml`
+
+Environment variables:
+
+| Name | Kind | Required | Description |
+| --- | --- | --- | --- |
+| `MYMIND_KID` | key_id | Yes | mymind access key identifier. |
+| `MYMIND_SECRET` | shared_secret | Yes | base64-encoded mymind access key secret; the CLI signs each request JWT. |
 
 ## Troubleshooting
-
-| Issue | What to check |
-| --- | --- |
-| Auth errors | Run `mymind login` again, or set both `MYMIND_KID` and `MYMIND_SECRET`; try `mymind auth status --json` |
-| `mymind` is not found | Run `npm install -g @nawwal/mymind` and confirm your npm global bin directory is on `PATH` |
-| MCP client never shows mymind | Restart the client; confirm command `mymind` and args `["mcp"]` — see [docs/client-configs.md](docs/client-configs.md) |
+**Authentication errors (exit code 4)**
+- Run `mymind doctor` to check credentials
+- Verify the environment variables are set: `printf "%s\n" "$MYMIND_KID"` and keep `MYMIND_SECRET` secret.
+**Not found errors (exit code 3)**
+- Check the resource ID is correct
+- Run the `list` command to see available items
 
 ---
 
-## Development
-
-```sh
-npm install
-npm run build
-npm test
-```
-
-Details: [docs/development.md](docs/development.md).
-
-## License
-
-MIT
+Generated by [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press)

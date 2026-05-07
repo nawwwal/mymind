@@ -1,0 +1,53 @@
+version: 2
+project_name: mymind
+changelog:
+  disable: true
+builds:
+  - id: mymind
+    main: ./cmd/mymind
+    binary: mymind
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/nawwwal/mymind/internal/cli.version={{ .Version }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - windows_arm64
+  - id: mymind-mcp
+    main: ./cmd/mymind-mcp
+    binary: mymind-mcp
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - windows_arm64
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+checksum:
+  name_template: checksums.txt
+brews:
+  - name: mymind
+    repository:
+      owner: nawwwal
+      name: homebrew-mymind
+    homepage: "https://github.com/nawwwal/mymind"
+    description: "The mymind API uses signed per-request JWT bearer tokens. Objects are saved URLs,
+notes, images, documents, videos, or files. Objects can have tags, spaces, notes,
+content, blobs, screenshots, and AI-generated metadata."
+    install: |
+      bin.install "mymind"
+      bin.install "mymind-mcp"

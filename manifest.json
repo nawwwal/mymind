@@ -1,0 +1,47 @@
+{
+  "manifest_version": "0.3",
+  "name": "mymind-mcp",
+  "display_name": "Mymind",
+  "version": "4.0.1",
+  "description": "Mymind API surface as MCP tools.",
+  "author": {
+    "name": "CLI Printing Press"
+  },
+  "license": "Apache-2.0",
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/mymind-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/bin/mymind-mcp",
+      "args": [],
+      "env": {
+        "MYMIND_KID": "${user_config.mymind_kid}",
+        "MYMIND_SECRET": "${user_config.mymind_secret}"
+      }
+    }
+  },
+  "user_config": {
+    "mymind_kid": {
+      "type": "string",
+      "title": "MYMIND_KID",
+      "description": "mymind access key identifier.",
+      "sensitive": true,
+      "required": true
+    },
+    "mymind_secret": {
+      "type": "string",
+      "title": "MYMIND_SECRET",
+      "description": "base64-encoded mymind access key secret; used to sign each request JWT.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ]
+  }
+}

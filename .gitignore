@@ -1,8 +1,9 @@
-node_modules/
+bin/
 dist/
 coverage/
-.npm-cache/
-*.tgz
 .DS_Store
 .env
 .env.*
+*.tgz
+dogfood-results.json
+workflow-verify-report.json
