@@ -6,6 +6,30 @@ content, blobs, screenshots, and AI-generated metadata.
 
 ## Install
 
+### Install Script
+
+Install both `mymind` and `mymind-mcp`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | sh
+```
+
+Install, save credentials, and set up Codex MCP:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | MYMIND_SETUP_MCP=codex sh
+```
+
+Non-interactive:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | \
+  MYMIND_KID=YOUR_KID \
+  MYMIND_SECRET=YOUR_SECRET \
+  MYMIND_SETUP_MCP=codex \
+  sh
+```
+
 ### Homebrew
 
 Install both `mymind` and `mymind-mcp` with:
@@ -29,6 +53,20 @@ Most users do not need Go. Homebrew and the pre-built release archives install b
 
 ```bash
 make build-all
+```
+
+## Update
+
+Homebrew install:
+
+```bash
+brew upgrade nawwwal/mymind/mymind
+```
+
+Install-script install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | sh
 ```
 
 ### Pre-built binary
