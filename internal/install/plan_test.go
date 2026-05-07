@@ -20,6 +20,19 @@ func TestPlanHomebrewUpdate(t *testing.T) {
 	}
 }
 
+func TestPlanHomebrewDryRunListsActionsWithoutMutation(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodHomebrew, MymindPath: "/opt/homebrew/bin/mymind"},
+		DryRun:    true,
+	})
+	if plan.CanMutate {
+		t.Fatalf("dry-run homebrew plan should not mutate")
+	}
+	if !plan.HasAction("upgrade-homebrew") || !plan.HasAction("repair-mcp") {
+		t.Fatalf("dry-run should still list intended actions: %#v", plan.Actions)
+	}
+}
+
 func TestPlanCurlUpdateIncludesMCPRepair(t *testing.T) {
 	plan := PlanUpdate(PlanOptions{
 		Detection: Detection{Method: MethodCurl, MymindPath: "/Users/me/.local/bin/mymind", MCPPath: "/Users/me/.local/bin/mymind-mcp"},
@@ -30,6 +43,47 @@ func TestPlanCurlUpdateIncludesMCPRepair(t *testing.T) {
 	}
 	if !plan.HasAction("replace-binaries") {
 		t.Fatalf("expected replace-binaries action in %#v", plan.Actions)
+	}
+	if !plan.HasAction("repair-mcp") {
+		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	}
+}
+
+func TestPlanCurlDryRunListsActionsWithoutMutation(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodCurl, MymindPath: "/Users/me/.local/bin/mymind", MCPPath: "/Users/me/.local/bin/mymind-mcp"},
+		DryRun:    true,
+	})
+	if plan.CanMutate {
+		t.Fatalf("dry-run curl plan should not mutate")
+	}
+	if !plan.HasAction("replace-binaries") || !plan.HasAction("repair-mcp") {
+		t.Fatalf("dry-run should still list intended actions: %#v", plan.Actions)
+	}
+}
+
+func TestPlanRepairMCPCheckOnlyListsActionWithoutMutation(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodUnknown, MymindPath: "/tmp/mymind"},
+		RepairMCP: true,
+		CheckOnly: true,
+	})
+	if plan.CanMutate {
+		t.Fatalf("repair-mcp check-only plan should not mutate")
+	}
+	if !plan.HasAction("repair-mcp") {
+		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	}
+}
+
+func TestPlanRepairMCPDryRunListsActionWithoutMutation(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodUnknown, MymindPath: "/tmp/mymind"},
+		RepairMCP: true,
+		DryRun:    true,
+	})
+	if plan.CanMutate {
+		t.Fatalf("repair-mcp dry-run plan should not mutate")
 	}
 	if !plan.HasAction("repair-mcp") {
 		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)

@@ -88,14 +88,24 @@ func isHomebrewInstall(path string, opts DetectOptions) bool {
 	if opts.LookPath == nil || opts.Run == nil {
 		return false
 	}
-	if _, err := opts.LookPath("brew"); err != nil {
+	brewPath, err := opts.LookPath("brew")
+	if err != nil {
 		return false
 	}
-	if !strings.Contains(path, "/homebrew/") && !strings.Contains(path, "/Cellar/") {
+	if !looksHomebrewOwnedPath(path, brewPath) {
 		return false
 	}
 	res := opts.Run.Run("brew", "info", "nawwwal/whimsies/mymind")
 	return res.Err == nil
+}
+
+func looksHomebrewOwnedPath(path, brewPath string) bool {
+	path = cleanPath(path)
+	brewPath = cleanPath(brewPath)
+	if strings.Contains(path, "/homebrew/") || strings.Contains(path, "/Cellar/") {
+		return true
+	}
+	return strings.HasPrefix(path, "/usr/local/") && strings.HasPrefix(brewPath, "/usr/local/")
 }
 
 func isSourcePath(path string, env map[string]string) bool {

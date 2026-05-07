@@ -67,6 +67,26 @@ func TestDetectInstallMethodPrefersHomebrew(t *testing.T) {
 	}
 }
 
+func TestDetectInstallMethodFindsIntelHomebrew(t *testing.T) {
+	result := Detect(DetectOptions{
+		ExecutablePath: "/usr/local/bin/mymind",
+		LookPath: func(name string) (string, error) {
+			if name == "brew" {
+				return "/usr/local/bin/brew", nil
+			}
+			return "", os.ErrNotExist
+		},
+		Run: fakeRunner{outputs: map[string]CommandResult{
+			"brew info nawwwal/whimsies/mymind": {Stdout: "mymind: stable 1.3.4\n"},
+		}},
+		Env: map[string]string{},
+	})
+
+	if result.Method != MethodHomebrew {
+		t.Fatalf("method = %s, want %s", result.Method, MethodHomebrew)
+	}
+}
+
 func TestDetectInstallMethodUnknownForUnownedPath(t *testing.T) {
 	result := Detect(DetectOptions{
 		ExecutablePath: "/tmp/mymind",

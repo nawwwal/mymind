@@ -41,6 +41,7 @@ func PlanUpdate(opts PlanOptions) UpdatePlan {
 	if opts.RepairMCP {
 		plan.CanMutate = true
 		plan.Actions = append(plan.Actions, Action{Name: "repair-mcp", Message: "reconcile MCP client config"})
+		applyNonMutatingFlags(&plan, opts)
 		return plan
 	}
 	switch opts.Detection.Method {
@@ -66,8 +67,12 @@ func PlanUpdate(opts PlanOptions) UpdatePlan {
 	default:
 		plan.Error = ErrUnsupportedInstallMethod.Error()
 	}
-	if opts.CheckOnly {
+	applyNonMutatingFlags(&plan, opts)
+	return plan
+}
+
+func applyNonMutatingFlags(plan *UpdatePlan, opts PlanOptions) {
+	if opts.CheckOnly || opts.DryRun {
 		plan.CanMutate = false
 	}
-	return plan
 }
