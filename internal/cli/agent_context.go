@@ -179,6 +179,9 @@ func collectAgentCommands(c *cobra.Command) []agentContextCommand {
 			}
 		}
 		sub.Flags().VisitAll(func(f *pflag.Flag) {
+			if f.Hidden {
+				return
+			}
 			entry.Flags = append(entry.Flags, agentContextFlag{
 				Name:    f.Name,
 				Type:    f.Value.Type(),

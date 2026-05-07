@@ -40,9 +40,6 @@ type rootFlags struct {
 	timeout       time.Duration
 	rateLimit     float64
 	dataSource    string
-	installMethod string
-	currentPath   string
-	mcpPath       string
 	freshnessMeta any
 
 	// deliverBuf captures command output when --deliver is set to a
@@ -122,12 +119,6 @@ Discovery for agents:
 	rootCmd.PersistentFlags().StringVar(&flags.profileName, "profile", "", "Apply values from a saved profile (see 'mymind profile list')")
 	rootCmd.PersistentFlags().StringVar(&flags.deliverSpec, "deliver", "", "Route output to a sink: stdout (default), file:<path>, webhook:<url>")
 	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 0, "Max requests per second (0 to disable)")
-	rootCmd.PersistentFlags().StringVar(&flags.installMethod, "install-method", "", "Override detected install method for tests")
-	rootCmd.PersistentFlags().StringVar(&flags.currentPath, "current-path", "", "Override current binary path for tests")
-	rootCmd.PersistentFlags().StringVar(&flags.mcpPath, "mcp-path", "", "Override MCP binary path for tests")
-	_ = rootCmd.PersistentFlags().MarkHidden("install-method")
-	_ = rootCmd.PersistentFlags().MarkHidden("current-path")
-	_ = rootCmd.PersistentFlags().MarkHidden("mcp-path")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if flags.deliverSpec != "" {

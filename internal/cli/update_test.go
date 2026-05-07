@@ -92,6 +92,21 @@ func TestUpdateRejectsPositionalArgs(t *testing.T) {
 	}
 }
 
+func TestUpdateOverrideFlagsAreNotAcceptedByOtherCommands(t *testing.T) {
+	cmd := RootCmd()
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"objects", "--install-method", "curl", "--help"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected update-only override flag to be rejected by objects")
+	}
+	if !strings.Contains(err.Error(), "unknown flag: --install-method") {
+		t.Fatalf("error = %q", err.Error())
+	}
+}
+
 func TestAgentContextDoesNotIncludeUpdateTestOverrideFlags(t *testing.T) {
 	ctx := buildAgentContext(RootCmd())
 	data, err := json.Marshal(ctx)
