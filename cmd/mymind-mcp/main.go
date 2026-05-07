@@ -7,14 +7,16 @@ import (
 	"fmt"
 	"os"
 
-	mcptools "github.com/nawwwal/mymind/internal/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	mcptools "github.com/nawwwal/mymind/internal/mcp"
 )
+
+var version = "dev"
 
 func main() {
 	s := server.NewMCPServer(
 		"Mymind",
-		"1.0.0",
+		version,
 		server.WithToolCapabilities(false),
 	)
 
