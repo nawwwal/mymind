@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -178,5 +179,117 @@ func TestOutputSearchResults_AppliesSelect(t *testing.T) {
 	}
 	if envelope.Results[0]["title"] != "Useful" {
 		t.Fatalf("expected selected title: %#v", envelope.Results[0])
+	}
+}
+
+func TestFormatSearchHumanResults_ShowsFullSummaryAndTags(t *testing.T) {
+	longSummary := "This saved object summary is deliberately longer than sixty characters because the human search renderer must show the full thought, not a clipped table cell."
+	tags := []string{
+		"research", "interface systems", "longform notes", "memory design",
+		"search ranking", "agent handoff", "personal archive", "reference",
+	}
+	result := json.RawMessage(`{
+		"id": "obj_1",
+		"title": "Search renderer notes",
+		"score": 87.25,
+		"type": "note",
+		"url": "https://example.com/search-renderer",
+		"summary": ` + mustJSON(longSummary) + `,
+		"tags": ` + mustJSON(tags) + `,
+		"created": "2026-05-08T09:00:00Z",
+		"modified": "2026-05-08T10:30:00Z",
+		"hydration_error": "GET /objects/obj_1 returned HTTP 503"
+	}`)
+
+	var out bytes.Buffer
+	if err := formatSearchHumanResults(&out, []json.RawMessage{result}); err != nil {
+		t.Fatalf("formatSearchHumanResults returned error: %v", err)
+	}
+	got := out.String()
+
+	for _, want := range []string{
+		"Search renderer notes",
+		"Score: 87.25",
+		"Type: note",
+		"URL: https://example.com/search-renderer",
+		longSummary,
+		strings.Join(tags, ", "),
+		"Created: 2026-05-08",
+		"Modified: 2026-05-08",
+		"Hydration error: GET /objects/obj_1 returned HTTP 503",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("human search output missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "This saved object summary is deliberately longer than sixty charac...") {
+		t.Fatalf("human search output used generic truncation:\n%s", got)
+	}
+}
+
+func TestOutputSearchResults_AppliesCompactInMachineMode(t *testing.T) {
+	flags := &rootFlags{compact: true}
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	results := []json.RawMessage{json.RawMessage(`{
+		"id": "obj_1",
+		"title": "Useful",
+		"summary": "Kept by compact",
+		"score": 1,
+		"blob": {"path": "private/blob"}
+	}`)}
+
+	if err := outputSearchResults(cmd, flags, results, 10, DataProvenance{Source: "live"}); err != nil {
+		t.Fatalf("outputSearchResults returned error: %v", err)
+	}
+
+	var envelope struct {
+		Results []map[string]any `json:"results"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
+		t.Fatalf("unmarshal envelope: %v\n%s", err, out.String())
+	}
+	if envelope.Results[0]["summary"] != "Kept by compact" {
+		t.Fatalf("--compact should preserve summary: %#v", envelope.Results[0])
+	}
+	if _, ok := envelope.Results[0]["blob"]; ok {
+		t.Fatalf("--compact should remove verbose fields: %#v", envelope.Results[0])
+	}
+	if envelope.Results[0]["id"] != "obj_1" {
+		t.Fatalf("expected compact id: %#v", envelope.Results[0])
+	}
+}
+
+func TestSearchStatusEnabled_Suppression(t *testing.T) {
+	tests := []struct {
+		name      string
+		flags     rootFlags
+		stdoutTTY bool
+		stderrTTY bool
+		env       map[string]string
+		want      bool
+	}{
+		{name: "human tty", stdoutTTY: true, stderrTTY: true, want: true},
+		{name: "json", flags: rootFlags{asJSON: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "agent", flags: rootFlags{agent: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "compact", flags: rootFlags{compact: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "csv", flags: rootFlags{csv: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "quiet", flags: rootFlags{quiet: true}, stdoutTTY: true, stderrTTY: true},
+		{name: "non tty stdout", stdoutTTY: false, stderrTTY: true},
+		{name: "non tty stderr", stdoutTTY: true, stderrTTY: false},
+		{name: "ci", stdoutTTY: true, stderrTTY: true, env: map[string]string{"CI": "true"}},
+		{name: "term dumb", stdoutTTY: true, stderrTTY: true, env: map[string]string{"TERM": "dumb"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := searchStatusEnabled(&tt.flags, tt.stdoutTTY, tt.stderrTTY, func(key string) string {
+				return tt.env[key]
+			})
+			if got != tt.want {
+				t.Fatalf("searchStatusEnabled() = %t, want %t", got, tt.want)
+			}
+		})
 	}
 }

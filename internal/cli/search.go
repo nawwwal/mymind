@@ -6,6 +6,8 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/nawwwal/mymind/internal/client"
@@ -341,14 +343,13 @@ needs the raw ranked IDs from the search endpoint.`,
 					"similarTo":     similarTo,
 					"rerank":        fmt.Sprintf("%t", rerank),
 				}
+				emitSearchStatus(cmd, flags, "Searching...")
 				data, getErr := c.Get("/search", queryParams)
 				if getErr == nil {
 					// Live search succeeded
 					results := extractSearchResults(data)
 					if !matchesOnly {
-						if wantsHumanTable(cmd.OutOrStdout(), flags) {
-							fmt.Fprintf(cmd.ErrOrStderr(), "Fetching result details...\n")
-						}
+						emitSearchStatus(cmd, flags, "Fetching result details...")
 						results = hydrateSearchResults(c, results)
 					}
 					prov := DataProvenance{Source: "live"}
@@ -374,6 +375,7 @@ needs the raw ranked IDs from the search endpoint.`,
 			defer db.Close()
 
 			var results []json.RawMessage
+			emitSearchStatus(cmd, flags, "Searching local archive...")
 			switch resourceType {
 			case "objects":
 				results, err = db.SearchObjects(query, limit)
@@ -424,6 +426,28 @@ needs the raw ranked IDs from the search endpoint.`,
 	return cmd
 }
 
+func searchStatusEnabled(flags *rootFlags, stdoutTTY, stderrTTY bool, getenv func(string) string) bool {
+	if flags == nil {
+		return false
+	}
+	if flags.asJSON || flags.agent || flags.compact || flags.csv || flags.quiet {
+		return false
+	}
+	if !stdoutTTY || !stderrTTY {
+		return false
+	}
+	if getenv("CI") != "" || getenv("TERM") == "dumb" {
+		return false
+	}
+	return true
+}
+
+func emitSearchStatus(cmd *cobra.Command, flags *rootFlags, message string) {
+	if searchStatusEnabled(flags, isTerminal(cmd.OutOrStdout()), isTerminal(cmd.ErrOrStderr()), os.Getenv) {
+		fmt.Fprintln(cmd.ErrOrStderr(), message)
+	}
+}
+
 // outputSearchResults filters, counts, and outputs search results with provenance.
 func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.RawMessage, limit int, prov DataProvenance) error {
 	// Filter out entries with nil or empty identifier fields.
@@ -440,14 +464,18 @@ func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.Ra
 		results = results[:limit]
 	}
 
-	jsonMode := flags.asJSON || !isTerminal(cmd.OutOrStdout())
+	if flags.quiet {
+		return nil
+	}
+
+	machineMode := flags.asJSON || flags.compact || flags.csv || !isTerminal(cmd.OutOrStdout())
 
 	// JSON mode always emits a valid envelope, including on no matches —
 	// agents pipe stdout through json.loads / jq and need parseable output
 	// regardless of result count. The filtered slice is built via make
 	// above, so it's non-nil even when empty; json.Marshal renders that
 	// as `[]` rather than `null`.
-	if jsonMode {
+	if machineMode {
 		data, err := json.Marshal(results)
 		if err != nil {
 			return err
@@ -456,6 +484,9 @@ func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.Ra
 			data = filterFields(data, flags.selectFields)
 		} else if flags.compact {
 			data = compactFields(data)
+		}
+		if flags.csv {
+			return printCSV(cmd.OutOrStdout(), data)
 		}
 		wrapped, err := wrapWithProvenance(data, prov)
 		if err != nil {
@@ -470,14 +501,88 @@ func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.Ra
 	}
 
 	printProvenance(cmd, len(results), prov)
-	var items []map[string]any
-	if json.Unmarshal(mustMarshalSearchResults(results), &items) == nil && len(items) > 0 {
-		return printAutoTable(cmd.OutOrStdout(), items)
-	}
-	for _, r := range results {
-		fmt.Fprintln(cmd.OutOrStdout(), string(r))
+	return formatSearchHumanResults(cmd.OutOrStdout(), results)
+}
+
+func formatSearchHumanResults(w io.Writer, results []json.RawMessage) error {
+	for i, raw := range results {
+		if i > 0 {
+			fmt.Fprintln(w)
+		}
+		var result map[string]any
+		if err := json.Unmarshal(raw, &result); err != nil {
+			return err
+		}
+		title := searchStringField(result, "title", "name", "label", "id")
+		if title != "" {
+			fmt.Fprintln(w, title)
+		}
+		writeSearchHumanField(w, "Score", result["score"])
+		writeSearchHumanField(w, "Type", firstSearchValue(result, "type", "entityType", "kind"))
+		writeSearchHumanField(w, "URL", firstSearchValue(result, "url"))
+		writeSearchHumanField(w, "Summary", firstSearchValue(result, "summary", "description"))
+		writeSearchHumanField(w, "Tags", result["tags"])
+		writeSearchHumanField(w, "Created", firstSearchValue(result, "created", "created_at"))
+		writeSearchHumanField(w, "Modified", firstSearchValue(result, "modified", "updated_at", "bumped"))
+		writeSearchHumanField(w, "Hydration error", result["hydration_error"])
 	}
 	return nil
+}
+
+func firstSearchValue(obj map[string]any, keys ...string) any {
+	for _, key := range keys {
+		if value, ok := obj[key]; ok {
+			return value
+		}
+	}
+	return nil
+}
+
+func writeSearchHumanField(w io.Writer, label string, value any) {
+	formatted := formatSearchHumanValue(value)
+	if formatted == "" {
+		return
+	}
+	fmt.Fprintf(w, "  %s: %s\n", label, formatted)
+}
+
+func formatSearchHumanValue(value any) string {
+	switch v := value.(type) {
+	case string:
+		if strings.TrimSpace(v) == "" {
+			return ""
+		}
+		if len(v) >= 19 && v[4] == '-' && v[7] == '-' && v[10] == 'T' {
+			return v[:10]
+		}
+		return v
+	case float64:
+		if v == float64(int64(v)) {
+			return fmt.Sprintf("%d", int64(v))
+		}
+		return fmt.Sprintf("%.2f", v)
+	case bool:
+		return fmt.Sprintf("%t", v)
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, item := range v {
+			if formatted := formatSearchHumanValue(item); formatted != "" {
+				parts = append(parts, formatted)
+			}
+		}
+		return strings.Join(parts, ", ")
+	case map[string]any:
+		if name := searchStringField(v, "name", "title", "label", "id"); name != "" {
+			return name
+		}
+		data, _ := json.Marshal(v)
+		return string(data)
+	case nil:
+		return ""
+	default:
+		data, _ := json.Marshal(v)
+		return string(data)
+	}
 }
 
 func mustMarshalSearchResults(results []json.RawMessage) json.RawMessage {
