@@ -59,22 +59,6 @@ func RegisterTools(s *server.MCPServer) {
 		makeSearchAPIHandler(),
 	)
 	s.AddTool(
-		mcplib.NewTool("mymind-search_search-objects",
-			mcplib.WithDescription("Compatibility search endpoint. Prefer the search tool. Returns useful result summaries unless matchesOnly is true. Required: q. Optional: limit (default: 20), semantic, semanticBoost, similarTo, rerank, matchesOnly."),
-			mcplib.WithString("q", mcplib.Required(), mcplib.Description("Query string. URL-encode operators such as `&&` and `:`.")),
-			mcplib.WithString("limit", mcplib.Description("Limit")),
-			mcplib.WithString("semantic", mcplib.Description("Semantic")),
-			mcplib.WithString("semanticBoost", mcplib.Description("Multiplier applied only when `semantic=true`.")),
-			mcplib.WithString("similarTo", mcplib.Description("Mastermind-only related-object search. Implies semantic search.")),
-			mcplib.WithString("rerank", mcplib.Description("Mastermind-only cross-encoder rerank. Implies semantic search and caps results at 100.")),
-			mcplib.WithString("matchesOnly", mcplib.Description("Return raw ranked IDs without fetching object summaries.")),
-			mcplib.WithReadOnlyHintAnnotation(true),
-			mcplib.WithDestructiveHintAnnotation(false),
-			mcplib.WithOpenWorldHintAnnotation(true),
-		),
-		makeSearchAPIHandler(),
-	)
-	s.AddTool(
 		mcplib.NewTool("objects_create",
 			mcplib.WithDescription("Creates an object from exactly one of `url`, `content`, or multipart `blob`. Duplicate URL/content/blob saves return the existing object, refresh `bumped`, and respond with 200 instead of 201. Optional: content, spaces, tags (plus 2 more). Returns the new Object."),
 			mcplib.WithString("content", mcplib.Description("Plain string or structured Content object.")),
@@ -629,7 +613,12 @@ func handleSearch(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.Call
 		return mcplib.NewToolResultError(fmt.Sprintf("search failed: %v", err)), nil
 	}
 
-	data, _ := json.MarshalIndent(results, "", "  ")
+	data, _ := json.MarshalIndent(map[string]any{
+		"count":  len(results),
+		"items":  results,
+		"mode":   "local",
+		"source": "local",
+	}, "", "  ")
 	return mcplib.NewToolResultText(string(data)), nil
 }
 
@@ -720,13 +709,6 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 				"searchable":  true,
 			},
 			{
-				"name":        "mymind-search",
-				"description": "Manage mymind search",
-				"endpoints":   []string{"search-objects"},
-				"syncable":    true,
-				"searchable":  true,
-			},
-			{
 				"name":        "objects",
 				"description": "Manage objects",
 				"endpoints":   []string{"create", "delete", "get", "list", "update"},
@@ -748,6 +730,9 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			},
 		},
 		"query_tips": []string{
+			"Call context first when you do not know the surface.",
+			"Use search first for finding saved objects. It returns useful summaries with id, score, title, type, URL, tags, and dates when available.",
+			"Use matchesOnly=true only when you need raw ranked IDs.",
 			"Pagination uses cursor-based paging. Pass after parameter for subsequent pages.",
 			"Control page size with the limit parameter (default 100).",
 			"Use the sql tool for ad-hoc analysis on synced data. Run sync first to populate the local database.",

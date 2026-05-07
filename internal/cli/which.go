@@ -27,10 +27,11 @@ type whichEntry struct {
 // `--help`; `which` exists to resolve a natural-language capability
 // query to one of the commands the skill says matter most.
 var whichIndex = []whichEntry{
+	{Command: "agent-context", Description: "Emit the machine-readable command tree, flags, auth requirements, and discovery metadata for agents.", Group: "agent"},
 	{Command: "convert content", Description: "Converts between plain text, Markdown, and mymind prose. Source and target formats must differ.", Group: "convert"},
 	{Command: "entities get-entity", Description: "WIP/coming soon. The docs say type identifiers, property shapes, and this endpoint\nmay change before launch. Do not ship production integrations against this path yet.", Group: "entities"},
-	{Command: "search", Description: "Search with Lucene-inspired syntax, optional semantic search, related-object matching,\nand Mastermind-only reranking.", Group: "search"},
-	{Command: "objects create", Description: "Creates an object from exactly one of `url`, `content`, or multipart `blob`.\nDuplicate URL/content/blob saves return the existing object, refresh `bumped`,\nand respond with 200 instead of 201.", Group: "objects"},
+	{Command: "search", Description: "Find saved articles, notes, bookmarks, images, documents, and references. Search with Lucene-inspired syntax, optional semantic search, related-object matching,\nand Mastermind-only reranking.", Group: "search"},
+	{Command: "objects create", Description: "Save a URL, save note content, or upload a blob as a mymind object. Creates an object from exactly one of `url`, `content`, or multipart `blob`.\nDuplicate URL/content/blob saves return the existing object, refresh `bumped`,\nand respond with 200 instead of 201.", Group: "objects"},
 	{Command: "objects delete", Description: "Soft-deletes an object. Deleted objects are recoverable for 30 days.", Group: "objects"},
 	{Command: "objects get", Description: "Get an object", Group: "objects"},
 	{Command: "objects list", Description: "Returns objects accessible to the authenticated key. If `q` is present, search\nsemantics and search credit costs apply. Deleted objects are excluded.", Group: "objects"},
@@ -45,7 +46,7 @@ var whichIndex = []whichEntry{
 	{Command: "objects pin unpin-object", Description: "Unpin an object", Group: "objects"},
 	{Command: "objects restore object", Description: "Restore an object", Group: "objects"},
 	{Command: "objects screenshot get-object", Description: "Returns screenshot bytes captured at save time. May return 302 to a signed CDN URL.", Group: "objects"},
-	{Command: "objects spaces add-object", Description: "Adds one object to one or more spaces. Objects may belong to at most 100 spaces.", Group: "objects"},
+	{Command: "objects spaces add-object", Description: "Add object to space. Adds one object to one or more spaces.", Group: "objects"},
 	{Command: "objects tags add-object", Description: "Add tags to an object", Group: "objects"},
 	{Command: "objects tags remove-object", Description: "Remove tags from an object", Group: "objects"},
 	{Command: "objects thumbnail get-object", Description: "Get object thumbnail", Group: "objects"},
@@ -57,6 +58,11 @@ var whichIndex = []whichEntry{
 	{Command: "spaces objects add-to-space", Description: "Add an object to a space", Group: "spaces"},
 	{Command: "spaces objects remove-from-space", Description: "Remove an object from a space", Group: "spaces"},
 	{Command: "tags list", Description: "Tags are created implicitly when first used; there is no standalone create tag endpoint.", Group: "tags"},
+	{Command: "auth set-key", Description: "Save mymind credentials locally from MYMIND_KID and MYMIND_SECRET values.", Group: "auth"},
+	{Command: "doctor", Description: "Check authentication, connectivity, config, and local installation health.", Group: "auth"},
+	{Command: "sync", Description: "Sync API data to local SQLite for offline search and SQL analysis.", Group: "local"},
+	{Command: "analytics", Description: "Run count and group-by analytics queries on locally synced data.", Group: "local"},
+	{Command: "api", Description: "Browse every generated API endpoint by interface name for full coverage.", Group: "agent"},
 }
 
 // whichMatch pairs an index entry with its ranking score for a query.
@@ -141,6 +147,11 @@ func whichScoreEntry(e whichEntry, query string, qTokens []string) int {
 	// Substring match on the description.
 	if strings.Contains(desc, query) {
 		score += 2
+	}
+	for _, qt := range qTokens {
+		if strings.Contains(desc, qt) {
+			score += 1
+		}
 	}
 	// Group tag match.
 	if group != "" {

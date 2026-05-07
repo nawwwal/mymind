@@ -87,7 +87,12 @@ func newRootCmd(flags *rootFlags) *cobra.Command {
 		Long: `Manage mymind resources via the mymind API.
 
 Add --agent to any command for JSON output + non-interactive mode.
-Run 'mymind doctor' to verify auth and connectivity.`,
+Run 'mymind doctor' to verify auth and connectivity.
+
+Discovery for agents:
+  mymind which "<task>"    find the command for a task
+  mymind agent-context     emit the machine-readable command tree
+  mymind api               browse every API endpoint`,
 		SilenceUsage: true,
 		Version:      version,
 	}
@@ -172,6 +177,7 @@ Run 'mymind doctor' to verify auth and connectivity.`,
 	rootCmd.AddCommand(newSpacesCmd(flags))
 	rootCmd.AddCommand(newDoctorCmd(flags))
 	rootCmd.AddCommand(newAuthCmd(flags))
+	rootCmd.AddCommand(newAgentScoreCmd(rootCmd))
 	rootCmd.AddCommand(newAgentContextCmd(rootCmd))
 	rootCmd.AddCommand(newProfileCmd(flags))
 	rootCmd.AddCommand(newFeedbackCmd(flags))

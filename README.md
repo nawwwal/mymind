@@ -183,6 +183,8 @@ mymind spaces objects add-to-space <space_id> <object_id>
 Use `--agent` when another tool is calling `mymind`.
 
 ```bash
+mymind agent-context --pretty
+mymind which "save a URL" --json
 mymind search "renewal notes" --agent
 mymind search "renewal notes" --agent --select id,title,url,score
 ```

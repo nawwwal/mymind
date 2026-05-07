@@ -296,7 +296,11 @@ or hit the API's search endpoint when available.
 In auto mode (default): uses the API search endpoint if the API has one,
 otherwise searches local data. Falls back to local on network failure.
 In live mode: uses the API search endpoint only.
-In local mode: searches locally synced data only.`,
+In local mode: searches locally synced data only.
+
+Default output is a useful result summary: id, score, title, type, URL,
+tags, and dates when available. Use --matches-only only when an agent
+needs the raw ranked IDs from the search endpoint.`,
 		Example: `  # Search (uses API endpoint if available, local FTS otherwise)
   mymind search "error timeout"
 
@@ -310,7 +314,13 @@ In local mode: searches locally synced data only.`,
   mymind search "article about memory" --semantic --rerank
 
   # JSON output for piping
-  mymind search "critical" --json --limit 20`,
+  mymind search "critical" --json --limit 20
+
+  # Agent-safe search summary with only the fields you need
+  mymind search "renewal notes" --agent --select id,title,url,score
+
+  # Raw ranked IDs only
+  mymind search "renewal notes" --matches-only --json`,
 		Annotations: map[string]string{"mcp:hidden": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
