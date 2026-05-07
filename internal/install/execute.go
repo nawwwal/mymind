@@ -24,17 +24,24 @@ func ExecuteUpdate(ctx context.Context, plan UpdatePlan, opts ExecuteOptions) er
 		return errors.New("update execution requires a command runner")
 	}
 
-	switch plan.Method {
-	case MethodHomebrew:
-		return executeHomebrewUpdate(ctx, opts.Runner)
-	case MethodCurl:
-		return errors.New("curl update execution requires release downloader/replacer; refusing to mutate")
-	default:
-		if plan.Current == "" {
-			return fmt.Errorf("%s install method cannot be updated automatically", plan.Method)
+	for _, action := range plan.Actions {
+		if err := ctx.Err(); err != nil {
+			return err
 		}
-		return fmt.Errorf("%s install method cannot be updated automatically for %s", plan.Method, plan.Current)
+		switch action.Name {
+		case "upgrade-homebrew":
+			if err := executeHomebrewUpdate(ctx, opts.Runner); err != nil {
+				return err
+			}
+		case "repair-mcp":
+			continue
+		case "download-release", "verify-checksum", "replace-binaries", "write-metadata":
+			return errors.New("curl update execution requires release downloader/replacer; refusing to mutate")
+		default:
+			return fmt.Errorf("unsupported update action %q", action.Name)
+		}
 	}
+	return nil
 }
 
 func executeHomebrewUpdate(ctx context.Context, runner Runner) error {

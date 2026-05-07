@@ -25,6 +25,22 @@ func TestExecuteHomebrewUpdateRunsBrewUpgrade(t *testing.T) {
 	}
 }
 
+func TestExecuteHomebrewRepairOnlyRunsNoCommands(t *testing.T) {
+	runner := &recordingRunner{}
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodHomebrew, MymindPath: "/opt/homebrew/bin/mymind"},
+		RepairMCP: true,
+	})
+
+	if err := ExecuteUpdate(context.Background(), plan, ExecuteOptions{Runner: runner}); err != nil {
+		t.Fatalf("execute repair-only update: %v", err)
+	}
+
+	if len(runner.calls) != 0 {
+		t.Fatalf("commands run = %#v, want none", runner.calls)
+	}
+}
+
 func TestExecuteUnknownPlanRefusesMutation(t *testing.T) {
 	runner := &recordingRunner{}
 	plan := PlanUpdate(PlanOptions{
