@@ -53,6 +53,15 @@ curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | \
   sh
 ```
 
+Update an existing install:
+
+```bash
+mymind update
+```
+
+The updater detects Homebrew, curl, source, and unknown installs. Prefer it over
+rerunning install commands when mymind is already present.
+
 Users should not need Go to install MCP. Only use `go install` if the user is a
 Go developer and asks for source-based installation.
 

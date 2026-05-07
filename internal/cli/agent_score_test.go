@@ -2,7 +2,11 @@
 
 package cli
 
-import "testing"
+import (
+	"os"
+	"strings"
+	"testing"
+)
 
 func TestAgentScoreMeetsThreshold(t *testing.T) {
 	report := buildAgentScore(RootCmd())
@@ -37,6 +41,19 @@ func TestWhichCoversCoreAgentTasks(t *testing.T) {
 		}
 		if got := matches[0].Entry.Command; got != tc.want {
 			t.Fatalf("which top match for %q = %q, want %q", tc.query, got, tc.want)
+		}
+	}
+}
+
+func TestDocsMentionNativeUpdate(t *testing.T) {
+	for _, path := range []string{"../../README.md", "../../SKILL.md"} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := string(data)
+		if !strings.Contains(body, "mymind update") {
+			t.Fatalf("%s does not mention mymind update", path)
 		}
 	}
 }

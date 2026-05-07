@@ -45,6 +45,18 @@ Update later with:
 brew upgrade nawwwal/whimsies/mymind
 ```
 
+## Update
+
+For existing installs, use the native updater:
+
+```bash
+mymind update
+```
+
+It detects Homebrew, curl, source, and unknown installs. Homebrew installs
+delegate to `brew upgrade nawwwal/whimsies/mymind`. Curl installs update both
+`mymind` and `mymind-mcp`, then repair MCP client pointers.
+
 ## Use with agents
 
 Let the installer find your agent apps:
