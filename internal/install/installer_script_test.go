@@ -116,6 +116,44 @@ func TestInstallerConfiguresCodexAndClaudeIdempotently(t *testing.T) {
 	}
 }
 
+func TestInstallerConfiguresClaudeCodeMCPWithUserScope(t *testing.T) {
+	body := shellFunctionBody(t, readInstallerScript(t), "configure_claude_code_mcp")
+
+	for _, command := range []string{
+		"claude mcp remove mymind --scope user",
+		`claude mcp add mymind "$mcp_path" --scope user`,
+	} {
+		if !strings.Contains(body, command) {
+			t.Fatalf("configure_claude_code_mcp missing %q in:\n%s", command, body)
+		}
+	}
+	if strings.Contains(body, "claude mcp remove mymind >/dev/null") {
+		t.Fatalf("claude remove is missing explicit user scope:\n%s", body)
+	}
+}
+
+func TestInstallerOnlyTreatsCredentialsAsConfigSourcedWhenBothCameFromConfig(t *testing.T) {
+	script := readInstallerScript(t)
+	body := shellFunctionBody(t, script, "load_saved_credentials")
+
+	if !strings.Contains(script, "credentials_loaded_entirely_from_config()") {
+		t.Fatalf("installer missing helper predicate for config-sourced credentials")
+	}
+	for _, token := range []string{
+		"KID_FROM_CONFIG=1",
+		"SECRET_FROM_CONFIG=1",
+		"credentials_loaded_entirely_from_config",
+		"CREDENTIALS_FROM_CONFIG=1",
+	} {
+		if !strings.Contains(body, token) {
+			t.Fatalf("load_saved_credentials missing %q in:\n%s", token, body)
+		}
+	}
+	if strings.Contains(body, "CREDENTIALS_FROM_CONFIG=1\n  say") {
+		t.Fatalf("load_saved_credentials marks config-sourced credentials unconditionally:\n%s", body)
+	}
+}
+
 func TestInstallerMenuSupportsRecommendedChooseSkipAndEnvModes(t *testing.T) {
 	script := readInstallerScript(t)
 
@@ -147,6 +185,21 @@ func readInstallerScript(t *testing.T) string {
 func installerScriptPath(t *testing.T) string {
 	t.Helper()
 	return filepath.Join("..", "..", "install.sh")
+}
+
+func shellFunctionBody(t *testing.T, script, name string) string {
+	t.Helper()
+	startNeedle := name + "() {\n"
+	start := strings.Index(script, startNeedle)
+	if start < 0 {
+		t.Fatalf("missing shell function %s", name)
+	}
+	bodyStart := start + len(startNeedle)
+	end := strings.Index(script[bodyStart:], "\n}\n")
+	if end < 0 {
+		t.Fatalf("missing end of shell function %s", name)
+	}
+	return script[bodyStart : bodyStart+end]
 }
 
 func runShellCheck(t *testing.T, args ...string) {

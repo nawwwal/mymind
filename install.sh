@@ -10,6 +10,8 @@ SECRET="${MYMIND_SECRET:-}"
 YES="${MYMIND_YES:-}"
 INTERACTIVE=0
 CREDENTIALS_FROM_CONFIG=0
+KID_FROM_CONFIG=0
+SECRET_FROM_CONFIG=0
 if ( : </dev/tty >/dev/tty ) 2>/dev/null; then
   INTERACTIVE=1
 fi
@@ -57,13 +59,21 @@ load_saved_credentials() {
   [ -n "$saved_kid" ] && [ -n "$saved_secret" ] || return 1
   if [ -z "$KID" ]; then
     KID="$saved_kid"
+    KID_FROM_CONFIG=1
   fi
   if [ -z "$SECRET" ]; then
     SECRET="$saved_secret"
+    SECRET_FROM_CONFIG=1
   fi
-  CREDENTIALS_FROM_CONFIG=1
+  if credentials_loaded_entirely_from_config; then
+    CREDENTIALS_FROM_CONFIG=1
+  fi
   say "Using saved mymind credentials from $file."
   return 0
+}
+
+credentials_loaded_entirely_from_config() {
+  [ "$KID_FROM_CONFIG" = "1" ] && [ "$SECRET_FROM_CONFIG" = "1" ]
 }
 
 is_yes() {
@@ -264,8 +274,8 @@ configure_codex_mcp() {
 configure_claude_code_mcp() {
   mcp_path="$1"
   has claude || fail "claude command not found"
-  claude mcp remove mymind >/dev/null 2>&1 || true
-  claude mcp add mymind "$mcp_path" -e "MYMIND_KID=$KID" -e "MYMIND_SECRET=$SECRET"
+  claude mcp remove mymind --scope user >/dev/null 2>&1 || true
+  claude mcp add mymind "$mcp_path" --scope user -e "MYMIND_KID=$KID" -e "MYMIND_SECRET=$SECRET"
   say "Configured Claude Code MCP server."
 }
 
