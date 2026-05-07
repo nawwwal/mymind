@@ -133,7 +133,7 @@ func TestUpdateLiveMutationReturnsClearTaskSixError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected live execution error")
 	}
-	if !strings.Contains(err.Error(), "live update execution is not implemented yet") {
+	if !strings.Contains(err.Error(), "curl update execution requires release downloader/replacer") {
 		t.Fatalf("error = %q", err.Error())
 	}
 }

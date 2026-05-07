@@ -49,7 +49,7 @@ func newUpdateCmd(flags *rootFlags) *cobra.Command {
 			if flags.dryRun || checkOnly || !plan.CanMutate {
 				return nil
 			}
-			return configErr(errors.New("live update execution is not implemented yet; rerun with --dry-run or --check to inspect the plan"))
+			return configErr(install.ExecuteUpdate(cmd.Context(), plan, install.ExecuteOptions{Runner: updateCommandRunner{}}))
 		},
 	}
 
