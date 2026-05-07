@@ -185,6 +185,7 @@ Discovery for agents:
 	rootCmd.AddCommand(newExportCmd(flags))
 	rootCmd.AddCommand(newImportCmd(flags))
 	rootCmd.AddCommand(newSearchCmd(flags))
+	rootCmd.AddCommand(newUpdateCmd(flags))
 	rootCmd.AddCommand(newSyncCmd(flags))
 	rootCmd.AddCommand(newAnalyticsCmd(flags))
 	rootCmd.AddCommand(newWorkflowCmd(flags))
