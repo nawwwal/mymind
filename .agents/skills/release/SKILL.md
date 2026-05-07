@@ -73,6 +73,15 @@ ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml"); puts "
 git diff --check
 ```
 
+Before tagging, audit README and installed skill docs against the actual release surface:
+
+```sh
+rg -n 'macos_intel|linux_x64|linux_arm64|windows_arm64|brews:' README.md SKILL.md .goreleaser.yaml .github/workflows/release.yml install.sh
+rg -n 'Apple Silicon macOS|Windows x64|brew install nawwwal/whimsies/mymind|summary|tags' README.md SKILL.md .agents/skills/release/SKILL.md
+```
+
+The first command should return no stale platform or deprecated `brews` references. The second should prove README, user skill, and release skill mention the current install path, release matrix, and search output contract.
+
 If `goreleaser` is installed:
 
 ```sh
@@ -223,6 +232,16 @@ git -C "$tap_repo" push origin main
 
 Then run the Homebrew verification section.
 
+## README And Skill Update Gate
+
+Every release-affecting change must update:
+
+- `README.md` for user-facing install commands, supported release assets, MCPB platforms, and search behavior.
+- `SKILL.md` for the skill users install.
+- `.agents/skills/release/SKILL.md` for this runbook.
+
+Do not tag until these files match `.goreleaser.yaml`, `.github/workflows/release.yml`, and `install.sh`.
+
 ## Clean Old Releases
 
 If the user asks for one clean current release only:
@@ -249,5 +268,6 @@ git ls-remote --tags origin 'v*'
 - `brew fetch --formula nawwwal/whimsies/mymind` succeeds.
 - Installed `mymind version` prints `X.Y.Z`.
 - Installed `mymind search skills --json --no-cache --limit 3` returns useful summaries with titles/URLs/scores when available.
+- README and installed `SKILL.md` match the released platform matrix and current search output contract.
 - Installed dry-run write parses comma-separated tags.
 - Worktrees for both main repo and tap repo are clean.
