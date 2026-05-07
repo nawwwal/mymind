@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 )
 
 type ExecuteOptions struct {
@@ -23,6 +25,9 @@ func ExecuteUpdate(ctx context.Context, plan UpdatePlan, opts ExecuteOptions) er
 	if opts.Runner == nil {
 		return errors.New("update execution requires a command runner")
 	}
+	if plan.Method == MethodCurl {
+		return executeCurlUpdate(ctx, plan, opts.Runner)
+	}
 
 	for _, action := range plan.Actions {
 		if err := ctx.Err(); err != nil {
@@ -34,14 +39,45 @@ func ExecuteUpdate(ctx context.Context, plan UpdatePlan, opts ExecuteOptions) er
 				return err
 			}
 		case "repair-mcp":
-			continue
+			return errors.New(mcpRepairUnsupported)
 		case "download-release", "verify-checksum", "replace-binaries", "write-metadata":
-			return errors.New("curl update execution requires release downloader/replacer; refusing to mutate")
+			return fmt.Errorf("curl update action %q reached generic executor", action.Name)
 		default:
 			return fmt.Errorf("unsupported update action %q", action.Name)
 		}
 	}
 	return nil
+}
+
+func executeCurlUpdate(ctx context.Context, plan UpdatePlan, runner Runner) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	current := cleanPath(plan.Current)
+	if current == "" {
+		return errors.New("curl update requires current mymind path")
+	}
+	installDir := filepath.Dir(current)
+	if installDir == "." || installDir == "" {
+		return fmt.Errorf("curl update cannot determine install directory from %q", plan.Current)
+	}
+
+	scriptURL := "https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh"
+	command := "curl -fsSL " + shellQuote(scriptURL) +
+		" | MYMIND_INSTALL_DIR=" + shellQuote(installDir) +
+		" MYMIND_SETUP_MCP=none MYMIND_YES=1 sh"
+	result := runner.Run("sh", "-c", command)
+	if result.Err != nil {
+		detail := strings.TrimSpace(result.Stderr)
+		if detail == "" {
+			detail = strings.TrimSpace(result.Stdout)
+		}
+		if detail != "" {
+			return fmt.Errorf("run curl installer update: %w: %s", result.Err, detail)
+		}
+		return fmt.Errorf("run curl installer update: %w", result.Err)
+	}
+	return ctx.Err()
 }
 
 func executeHomebrewUpdate(ctx context.Context, runner Runner) error {
@@ -59,4 +95,8 @@ func executeHomebrewUpdate(ctx context.Context, runner Runner) error {
 		return fmt.Errorf("run brew upgrade %s: %w", homebrewFormula, result.Err)
 	}
 	return ctx.Err()
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }

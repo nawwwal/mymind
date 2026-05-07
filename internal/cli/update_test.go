@@ -121,19 +121,19 @@ func TestAgentContextDoesNotIncludeUpdateTestOverrideFlags(t *testing.T) {
 	}
 }
 
-func TestUpdateLiveMutationReturnsClearTaskSixError(t *testing.T) {
+func TestUpdateRepairMCPLiveFailsClosed(t *testing.T) {
 	cmd := RootCmd()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
-	cmd.SetArgs([]string{"update", "--install-method", "curl", "--current-path", "/tmp/mymind", "--mcp-path", "/tmp/mymind-mcp"})
+	cmd.SetArgs([]string{"update", "--repair-mcp", "--install-method", "homebrew", "--current-path", "/opt/homebrew/bin/mymind"})
 
 	err := cmd.Execute()
 	if err == nil {
-		t.Fatalf("expected live execution error")
+		t.Fatalf("expected live repair error")
 	}
-	if !strings.Contains(err.Error(), "curl update execution requires release downloader/replacer") {
+	if !strings.Contains(err.Error(), "mcp repair execution is not implemented yet") {
 		t.Fatalf("error = %q", err.Error())
 	}
 }

@@ -9,14 +9,11 @@ func TestPlanHomebrewUpdate(t *testing.T) {
 	if plan.Method != MethodHomebrew {
 		t.Fatalf("method = %s", plan.Method)
 	}
-	if len(plan.Actions) != 2 {
-		t.Fatalf("actions = %#v, want 2 actions", plan.Actions)
+	if len(plan.Actions) != 1 {
+		t.Fatalf("actions = %#v, want 1 action", plan.Actions)
 	}
 	if plan.Actions[0].Command != "brew upgrade nawwwal/whimsies/mymind" {
 		t.Fatalf("first command = %q", plan.Actions[0].Command)
-	}
-	if !plan.HasAction("repair-mcp") {
-		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
 	}
 }
 
@@ -28,8 +25,11 @@ func TestPlanHomebrewDryRunListsActionsWithoutMutation(t *testing.T) {
 	if plan.CanMutate {
 		t.Fatalf("dry-run homebrew plan should not mutate")
 	}
-	if !plan.HasAction("upgrade-homebrew") || !plan.HasAction("repair-mcp") {
+	if !plan.HasAction("upgrade-homebrew") {
 		t.Fatalf("dry-run should still list intended actions: %#v", plan.Actions)
+	}
+	if plan.HasAction("repair-mcp") {
+		t.Fatalf("dry-run should not advertise unsupported repair execution: %#v", plan.Actions)
 	}
 }
 
@@ -44,8 +44,14 @@ func TestPlanCurlUpdateIncludesMCPRepair(t *testing.T) {
 	if !plan.HasAction("replace-binaries") {
 		t.Fatalf("expected replace-binaries action in %#v", plan.Actions)
 	}
-	if !plan.HasAction("repair-mcp") {
-		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	if plan.HasAction("repair-mcp") {
+		t.Fatalf("curl binary update should not advertise unsupported MCP repair: %#v", plan.Actions)
+	}
+	if !plan.CanMutate {
+		t.Fatalf("live curl plan should mutate through the repeat-safe installer: %#v", plan)
+	}
+	if plan.Error != "" {
+		t.Fatalf("unexpected curl plan error: %s", plan.Error)
 	}
 }
 
@@ -57,8 +63,11 @@ func TestPlanCurlDryRunListsActionsWithoutMutation(t *testing.T) {
 	if plan.CanMutate {
 		t.Fatalf("dry-run curl plan should not mutate")
 	}
-	if !plan.HasAction("replace-binaries") || !plan.HasAction("repair-mcp") {
+	if !plan.HasAction("replace-binaries") {
 		t.Fatalf("dry-run should still list intended actions: %#v", plan.Actions)
+	}
+	if plan.HasAction("repair-mcp") {
+		t.Fatalf("dry-run should not advertise unsupported repair execution: %#v", plan.Actions)
 	}
 }
 
@@ -87,6 +96,22 @@ func TestPlanRepairMCPDryRunListsActionWithoutMutation(t *testing.T) {
 	}
 	if !plan.HasAction("repair-mcp") {
 		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	}
+}
+
+func TestPlanRepairMCPLiveFailsClosed(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodHomebrew, MymindPath: "/opt/homebrew/bin/mymind"},
+		RepairMCP: true,
+	})
+	if plan.CanMutate {
+		t.Fatalf("live repair-mcp plan should not mutate until repair execution exists: %#v", plan)
+	}
+	if !plan.HasAction("repair-mcp") {
+		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	}
+	if plan.Error == "" {
+		t.Fatalf("expected live repair-mcp plan to fail closed")
 	}
 }
 

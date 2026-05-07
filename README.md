@@ -54,11 +54,9 @@ mymind update
 ```
 
 It detects Homebrew, curl, source, and unknown installs. Homebrew installs
-delegate live updates to `brew upgrade nawwwal/whimsies/mymind`.
-
-For curl installs, `mymind update --check` and `mymind update --dry-run` can
-inspect the install. Live binary replacement fails closed until the release
-executor ships, so rerun the repeat-safe installer for curl upgrades for now.
+delegate to `brew upgrade nawwwal/whimsies/mymind`. Curl installs rerun the
+repeat-safe installer for the detected install directory with MCP setup skipped,
+so existing MCP entries keep pointing at the same `mymind-mcp` path.
 
 ## Use with agents
 

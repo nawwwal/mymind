@@ -54,7 +54,7 @@ func newUpdateCmd(flags *rootFlags) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&checkOnly, "check", false, "Check whether an update is available without changing files")
-	cmd.Flags().BoolVar(&repairMCP, "repair-mcp", false, "Repair MCP client config without updating binaries")
+	cmd.Flags().BoolVar(&repairMCP, "repair-mcp", false, "Plan MCP client config repair without updating binaries")
 	cmd.Flags().StringVar(&installMethod, "install-method", "", "Override detected install method for tests")
 	cmd.Flags().StringVar(&currentPath, "current-path", "", "Override current binary path for tests")
 	cmd.Flags().StringVar(&mcpPath, "mcp-path", "", "Override MCP binary path for tests")

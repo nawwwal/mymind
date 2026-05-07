@@ -66,6 +66,7 @@ var frameworkCommands = map[string]bool{
 	"profile":       true,
 	"search":        true,
 	"sql":           true,
+	"update":        true,
 	"version":       true,
 	"which":         true,
 }

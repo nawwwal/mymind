@@ -23,6 +23,8 @@ type UpdatePlan struct {
 	Error     string   `json:"error,omitempty"`
 }
 
+const mcpRepairUnsupported = "mcp repair execution is not implemented yet; rerun the repeat-safe installer to reconcile MCP clients"
+
 func (p UpdatePlan) HasAction(name string) bool {
 	for _, action := range p.Actions {
 		if action.Name == name {
@@ -39,27 +41,28 @@ func PlanUpdate(opts PlanOptions) UpdatePlan {
 		Latest:  opts.Latest,
 	}
 	if opts.RepairMCP {
-		plan.CanMutate = true
 		plan.Actions = append(plan.Actions, Action{Name: "repair-mcp", Message: "reconcile MCP client config"})
-		applyNonMutatingFlags(&plan, opts)
+		if opts.CheckOnly || opts.DryRun {
+			applyNonMutatingFlags(&plan, opts)
+			return plan
+		}
+		plan.Error = mcpRepairUnsupported
 		return plan
 	}
 	switch opts.Detection.Method {
 	case MethodHomebrew:
 		plan.CanMutate = true
-		plan.Actions = append(plan.Actions,
-			Action{Name: "upgrade-homebrew", Command: "brew upgrade nawwwal/whimsies/mymind"},
-			Action{Name: "repair-mcp", Message: "reconcile MCP client config"},
-		)
+		plan.Actions = append(plan.Actions, Action{Name: "upgrade-homebrew", Command: "brew upgrade nawwwal/whimsies/mymind"})
 	case MethodCurl:
-		plan.CanMutate = true
 		plan.Actions = append(plan.Actions,
 			Action{Name: "download-release", Message: "download latest GitHub release asset"},
 			Action{Name: "verify-checksum", Message: "verify checksums.txt"},
 			Action{Name: "replace-binaries", Message: "replace mymind and mymind-mcp"},
 			Action{Name: "write-metadata", Message: "update install metadata"},
-			Action{Name: "repair-mcp", Message: "reconcile MCP client config"},
 		)
+		if !opts.CheckOnly && !opts.DryRun {
+			plan.CanMutate = true
+		}
 	case MethodSource:
 		plan.Error = "source-built install detected; rebuild from source instead of overwriting"
 	case MethodUnknown:
