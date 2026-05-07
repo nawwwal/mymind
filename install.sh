@@ -8,6 +8,10 @@ SETUP_MCP="${MYMIND_SETUP_MCP:-}"
 KID="${MYMIND_KID:-}"
 SECRET="${MYMIND_SECRET:-}"
 YES="${MYMIND_YES:-}"
+INTERACTIVE=0
+if ( : </dev/tty >/dev/tty ) 2>/dev/null; then
+  INTERACTIVE=1
+fi
 
 say() {
   printf '%s\n' "$*"
@@ -36,12 +40,12 @@ confirm() {
   if is_yes; then
     return 0
   fi
-  if [ ! -t 0 ]; then
+  if [ "$INTERACTIVE" != "1" ]; then
     [ "$default" = "y" ]
     return
   fi
-  printf '%s ' "$prompt"
-  read ans || ans=""
+  printf '%s ' "$prompt" >/dev/tty
+  read ans </dev/tty || ans=""
   case "$ans" in
     y|Y|yes|YES) return 0 ;;
     "") [ "$default" = "y" ] ;;
@@ -51,14 +55,14 @@ confirm() {
 
 read_secret() {
   prompt="$1"
-  if [ ! -t 0 ]; then
+  if [ "$INTERACTIVE" != "1" ]; then
     return 1
   fi
-  printf '%s' "$prompt" >&2
-  stty -echo 2>/dev/null || true
-  read value || value=""
-  stty echo 2>/dev/null || true
-  printf '\n' >&2
+  printf '%s' "$prompt" >/dev/tty
+  stty -echo </dev/tty 2>/dev/null || true
+  read value </dev/tty || value=""
+  stty echo </dev/tty 2>/dev/null || true
+  printf '\n' >/dev/tty
   printf '%s' "$value"
 }
 
@@ -90,6 +94,7 @@ json_configure_mcp() {
   }
 }
 EOF
+    chmod 600 "$file" 2>/dev/null || true
     return
   fi
   if has python3; then
@@ -118,6 +123,7 @@ servers["mymind"] = {
 }
 path.write_text(json.dumps(data, indent=2) + "\n")
 PY
+    chmod 600 "$file" 2>/dev/null || true
   else
     fail "$file already exists; install python3 or add the mymind MCP config manually"
   fi
@@ -215,6 +221,7 @@ configure_target() {
 need curl
 need tar
 need grep
+need sed
 
 os="$(uname -s)"
 arch="$(uname -m)"
@@ -237,8 +244,10 @@ case "$os" in
     esac
     if has sha256sum; then
       checksum_cmd="sha256sum --check"
-    else
+    elif has shasum; then
       checksum_cmd="shasum -a 256 --check"
+    else
+      fail "missing required checksum command: sha256sum or shasum"
     fi
     ;;
   *)
@@ -297,9 +306,9 @@ case ":$PATH:" in
   *) say "Add ${INSTALL_DIR} to PATH before running mymind from a new shell." ;;
 esac
 
-if [ -z "$KID" ] && [ -t 0 ] && confirm "Save mymind credentials now? [y/N]" n; then
-  printf 'MYMIND_KID: ' >&2
-  read KID || KID=""
+if [ -z "$KID" ] && [ "$INTERACTIVE" = "1" ] && confirm "Save mymind credentials now? [y/N]" n; then
+  printf 'MYMIND_KID: ' >/dev/tty
+  read KID </dev/tty || KID=""
   SECRET="$(read_secret 'MYMIND_SECRET: ')"
 fi
 
@@ -309,10 +318,10 @@ if [ -n "$KID" ] && [ -n "$SECRET" ]; then
 fi
 
 detected_targets="$(detect_targets)"
-if [ -z "$SETUP_MCP" ] && [ -t 0 ]; then
+if [ -z "$SETUP_MCP" ] && [ "$INTERACTIVE" = "1" ]; then
   print_target_menu "$detected_targets"
-  printf 'Set up MCP for [a/n/1,2,3,4]: '
-  read setup_choice || setup_choice=""
+  printf 'Set up MCP for [a/n/1,2,3,4]: ' >/dev/tty
+  read setup_choice </dev/tty || setup_choice=""
   SETUP_MCP="$(choice_to_targets "$setup_choice" "$detected_targets")"
 elif [ "$SETUP_MCP" = "all" ]; then
   SETUP_MCP="$detected_targets"

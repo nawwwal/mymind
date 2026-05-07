@@ -342,7 +342,7 @@ func RegisterTools(s *server.MCPServer) {
 	)
 	// Search tool — faster than iterating list endpoints for finding specific items
 	s.AddTool(
-		mcplib.NewTool("search",
+		mcplib.NewTool("local_search",
 			mcplib.WithDescription("Full-text search across all synced data. Faster than paginating list endpoints. Requires sync first."),
 			mcplib.WithString("query", mcplib.Required(), mcplib.Description("Search query (supports FTS5 syntax: AND, OR, NOT, quotes for phrases)")),
 			mcplib.WithNumber("limit", mcplib.Description("Max results (default 25)")),

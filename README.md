@@ -14,9 +14,9 @@ Install both `mymind` and `mymind-mcp`:
 curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | sh
 ```
 
-The installer detects supported MCP clients and lets you choose where to configure mymind.
+The installer detects supported MCP clients and lets you choose where to configure mymind. For human credential entry, use the interactive installer instead of putting secrets in shell history.
 
-Install, save credentials, and set up all detected MCP clients:
+Interactive install with all detected MCP clients:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | MYMIND_SETUP_MCP=all sh
@@ -154,6 +154,8 @@ Expand-Archive $asset -DestinationPath "$HOME\bin\mymind" -Force
 $env:Path = "$HOME\bin\mymind;$env:Path"
 mymind.exe version
 ```
+
+Windows ARM64 archives are also published in the latest release as `mymind_<version>_windows_arm64.zip`.
 
 <!-- pp-hermes-install-anchor -->
 ## Install for Hermes
@@ -324,7 +326,13 @@ Then invoke `/mymind <query>` in Claude Code. The skill is the most efficient pa
 <details>
 <summary>Use as an MCP server in Claude Code (advanced)</summary>
 
-If you'd rather register this CLI as an MCP server in Claude Code, install `mymind` first with Homebrew or a pre-built binary. That installs `mymind-mcp` too.
+If you'd rather register this CLI as an MCP server in Claude Code, the installer can do it:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | MYMIND_SETUP_MCP=claude-code sh
+```
+
+Manual setup:
 
 ```bash
 brew tap nawwwal/whimsies
@@ -343,7 +351,13 @@ claude mcp add mymind mymind-mcp -e MYMIND_KID=<your-kid> -e MYMIND_SECRET=<your
 
 Codex supports MCP servers in the CLI and IDE extension using the same `~/.codex/config.toml` configuration. OpenAI's docs show `codex mcp add` for setup and `codex mcp list` for verification.
 
-Install mymind without Go:
+The installer can configure Codex MCP:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | MYMIND_SETUP_MCP=codex sh
+```
+
+Manual setup:
 
 ```bash
 brew tap nawwwal/whimsies
@@ -383,7 +397,7 @@ References: [Codex CLI](https://developers.openai.com/codex/cli), [Codex MCP](ht
 
 ## Use with Claude Desktop
 
-This CLI ships an [MCPB](https://github.com/modelcontextprotocol/mcpb) bundle — Claude Desktop's standard format for one-click MCP extension installs (no JSON config required).
+This CLI ships an [MCPB](https://github.com/modelcontextprotocol/mcpb) bundle for macOS and Windows — Claude Desktop's standard format for one-click MCP extension installs (no JSON config required).
 
 To install:
 
@@ -391,7 +405,7 @@ To install:
 2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
 3. Fill in `MYMIND_KID` and `MYMIND_SECRET` when Claude Desktop prompts you.
 
-Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon, macOS Intel, Linux, and Windows; for other platforms, use the manual config below.
+Requires Claude Desktop 1.0.0 or later. Pre-built MCPB bundles ship for macOS Apple Silicon, macOS Intel, Windows x64, and Windows ARM64; for other platforms, use the manual config below.
 
 <details>
 <summary>Manual JSON config (advanced)</summary>
@@ -409,7 +423,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 {
   "mcpServers": {
     "mymind": {
-      "command": "mymind-mcp",
+      "command": "/opt/homebrew/bin/mymind-mcp",
       "env": {
         "MYMIND_KID": "<your-kid>",
         "MYMIND_SECRET": "<your-base64-secret>"
@@ -419,7 +433,17 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
+Use the absolute path from `command -v mymind-mcp`; GUI apps may not inherit your shell `PATH`.
+
 </details>
+
+## Use with Cursor
+
+The installer can configure Cursor MCP:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nawwwal/mymind/main/install.sh | MYMIND_SETUP_MCP=cursor sh
+```
 
 ## Health Check
 

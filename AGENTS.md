@@ -12,7 +12,7 @@
 - OpenAPI source: `.agents/generated/mymind.openapi.yaml`
 - Human API notes: `.agents/mymind-openapi-spec.md`
 - Release config: `.goreleaser.yaml`
-- Homebrew tap target: `nawwwal/homebrew-mymind`, installed by users as `brew tap nawwwal/mymind && brew install mymind`
+- Homebrew tap target: `nawwwal/homebrew-whimsies`, installed by users as `brew tap nawwwal/whimsies && brew install mymind`
 
 ## Build And Verify
 
@@ -62,14 +62,14 @@ mymind search "design notes" --agent
 
 Use `--dry-run` before writes when exploring. Destructive or mutating operations should use explicit confirmation flags such as `--yes` when required.
 
-For MCP docs, prefer packaged installs (`brew install mymind` or pre-built binaries). Do not tell normal users to `go install .../cmd/mymind-mcp@latest`; MCP users should not need Go.
+For MCP docs, prefer the installer script, Homebrew (`brew tap nawwwal/whimsies && brew install mymind`), or pre-built binaries. Do not tell normal users to `go install .../cmd/mymind-mcp@latest`; MCP users should not need Go.
 
 ## Release
 
-GoReleaser builds both binaries and updates the Homebrew tap:
+GoReleaser builds both binaries and updates the Homebrew tap. Release workflow requires `GORELEASER_GITHUB_TOKEN` with write access to `nawwwal/homebrew-whimsies`.
 
 ```sh
 goreleaser release --clean
 ```
 
-The generated MCP manifest is `manifest.json`; release assets should include the CLI archives and MCP bundle assets when available.
+The generated MCP manifest is `manifest.json`; release assets must include CLI archives and macOS/Windows MCPB bundle assets.

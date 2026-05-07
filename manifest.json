@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "mymind-mcp",
   "display_name": "Mymind",
-  "version": "1.1.0",
+  "version": "1.3.0",
   "description": "Mymind API surface as MCP tools.",
   "author": {
     "name": "CLI Printing Press"
@@ -40,7 +40,6 @@
     "claude_desktop": ">=1.0.0",
     "platforms": [
       "darwin",
-      "linux",
       "win32"
     ]
   }
