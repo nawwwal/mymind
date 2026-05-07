@@ -56,18 +56,25 @@ load_saved_credentials() {
   [ -f "$file" ] || return 1
   saved_kid="$(toml_value kid "$file")"
   saved_secret="$(toml_value secret "$file")"
-  [ -n "$saved_kid" ] && [ -n "$saved_secret" ] || return 1
+  loaded=0
   if [ -z "$KID" ]; then
-    KID="$saved_kid"
-    KID_FROM_CONFIG=1
+    if [ -n "$saved_kid" ]; then
+      KID="$saved_kid"
+      KID_FROM_CONFIG=1
+      loaded=1
+    fi
   fi
   if [ -z "$SECRET" ]; then
-    SECRET="$saved_secret"
-    SECRET_FROM_CONFIG=1
+    if [ -n "$saved_secret" ]; then
+      SECRET="$saved_secret"
+      SECRET_FROM_CONFIG=1
+      loaded=1
+    fi
   fi
   if credentials_loaded_entirely_from_config; then
     CREDENTIALS_FROM_CONFIG=1
   fi
+  [ "$loaded" = "1" ] || return 1
   say "Using saved mymind credentials from $file."
   return 0
 }

@@ -154,6 +154,71 @@ func TestInstallerOnlyTreatsCredentialsAsConfigSourcedWhenBothCameFromConfig(t *
 	}
 }
 
+func TestInstallerCredentialPrecedenceRunsInShell(t *testing.T) {
+	tests := []struct {
+		name           string
+		envKid         string
+		envSecret      string
+		configKid      string
+		configSecret   string
+		wantKid        string
+		wantSecret     string
+		wantFromConfig string
+	}{
+		{
+			name:           "env kid and config secret",
+			envKid:         "env-kid",
+			configSecret:   "config-secret",
+			wantKid:        "env-kid",
+			wantSecret:     "config-secret",
+			wantFromConfig: "0",
+		},
+		{
+			name:           "config kid and env secret",
+			envSecret:      "env-secret",
+			configKid:      "config-kid",
+			wantKid:        "config-kid",
+			wantSecret:     "env-secret",
+			wantFromConfig: "0",
+		},
+		{
+			name:           "config kid and config secret",
+			configKid:      "config-kid",
+			configSecret:   "config-secret",
+			wantKid:        "config-kid",
+			wantSecret:     "config-secret",
+			wantFromConfig: "1",
+		},
+		{
+			name:           "env kid and env secret override stale config",
+			envKid:         "env-kid",
+			envSecret:      "env-secret",
+			configKid:      "stale-kid",
+			configSecret:   "stale-secret",
+			wantKid:        "env-kid",
+			wantSecret:     "env-secret",
+			wantFromConfig: "0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configPath := writeCredentialConfig(t, tt.configKid, tt.configSecret)
+			output := runCredentialPrelude(t, configPath, tt.envKid, tt.envSecret)
+
+			for _, want := range []string{
+				"KID=" + tt.wantKid,
+				"SECRET=" + tt.wantSecret,
+				"CREDENTIALS_FROM_CONFIG=" + tt.wantFromConfig,
+			} {
+				if !strings.Contains(output, want+"\n") {
+					t.Fatalf("output missing %q:\n%s", want, output)
+				}
+			}
+		})
+	}
+}
+
 func TestInstallerMenuSupportsRecommendedChooseSkipAndEnvModes(t *testing.T) {
 	script := readInstallerScript(t)
 
@@ -200,6 +265,55 @@ func shellFunctionBody(t *testing.T, script, name string) string {
 		t.Fatalf("missing end of shell function %s", name)
 	}
 	return script[bodyStart : bodyStart+end]
+}
+
+func writeCredentialConfig(t *testing.T, kid, secret string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.toml")
+	var lines []string
+	if kid != "" {
+		lines = append(lines, `kid = "`+kid+`"`)
+	}
+	if secret != "" {
+		lines = append(lines, `secret = "`+secret+`"`)
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func runCredentialPrelude(t *testing.T, configPath, envKid, envSecret string) string {
+	t.Helper()
+	script := readInstallerScript(t)
+	marker := "\nneed curl\n"
+	idx := strings.Index(script, marker)
+	if idx < 0 {
+		t.Fatalf("installer missing install-body marker %q", marker)
+	}
+
+	harness := script[:idx] + `
+load_saved_credentials >/dev/null || true
+printf 'KID=%s\n' "$KID"
+printf 'SECRET=%s\n' "$SECRET"
+printf 'CREDENTIALS_FROM_CONFIG=%s\n' "$CREDENTIALS_FROM_CONFIG"
+`
+	path := filepath.Join(t.TempDir(), "credential-harness.sh")
+	if err := os.WriteFile(path, []byte(harness), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("sh", path)
+	cmd.Env = append(os.Environ(),
+		"MYMIND_CONFIG="+configPath,
+		"MYMIND_KID="+envKid,
+		"MYMIND_SECRET="+envSecret,
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("credential harness failed: %v\n%s", err, output)
+	}
+	return string(output)
 }
 
 func runShellCheck(t *testing.T, args ...string) {
