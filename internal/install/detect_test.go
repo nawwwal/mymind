@@ -38,17 +38,17 @@ func TestDetectInstallMethodFromCurlMetadata(t *testing.T) {
 	if result.Method != MethodCurl {
 		t.Fatalf("method = %s, want %s", result.Method, MethodCurl)
 	}
-	if result.MymindPath != mymind {
-		t.Fatalf("mymind path = %q, want %q", result.MymindPath, mymind)
+	if want := cleanPath(mymind); result.MymindPath != want {
+		t.Fatalf("mymind path = %q, want %q", result.MymindPath, want)
 	}
 }
 
 func TestDetectInstallMethodPrefersHomebrew(t *testing.T) {
 	result := Detect(DetectOptions{
-		ExecutablePath: "/opt/homebrew/bin/mymind",
+		ExecutablePath: "/opt/homebrew/Cellar/mymind/1.3.4/bin/mymind",
 		Metadata: &Metadata{
 			Method:     "curl",
-			MymindPath: "/opt/homebrew/bin/mymind",
+			MymindPath: "/opt/homebrew/Cellar/mymind/1.3.4/bin/mymind",
 		},
 		LookPath: func(name string) (string, error) {
 			if name == "brew" {
@@ -72,7 +72,7 @@ func TestDetectInstallMethodPrefersHomebrew(t *testing.T) {
 
 func TestDetectInstallMethodFindsIntelHomebrew(t *testing.T) {
 	result := Detect(DetectOptions{
-		ExecutablePath: "/usr/local/bin/mymind",
+		ExecutablePath: "/usr/local/Cellar/mymind/1.3.4/bin/mymind",
 		LookPath: func(name string) (string, error) {
 			if name == "brew" {
 				return "/usr/local/bin/brew", nil
@@ -90,6 +90,29 @@ func TestDetectInstallMethodFindsIntelHomebrew(t *testing.T) {
 
 	if result.Method != MethodHomebrew {
 		t.Fatalf("method = %s, want %s", result.Method, MethodHomebrew)
+	}
+}
+
+func TestDetectInstallMethodRejectsHomebrewFormulaThatDoesNotOwnBinary(t *testing.T) {
+	result := Detect(DetectOptions{
+		ExecutablePath: "/opt/homebrew/bin/mymind",
+		LookPath: func(name string) (string, error) {
+			if name == "brew" {
+				return "/opt/homebrew/bin/brew", nil
+			}
+			return "", os.ErrNotExist
+		},
+		Run: fakeRunner{outputs: map[string]CommandResult{
+			"brew info nawwwal/whimsies/mymind": {Stdout: "mymind: stable 1.3.4\n"},
+			"brew list --formula nawwwal/whimsies/mymind": {
+				Stdout: "/opt/homebrew/Cellar/mymind/1.3.4/bin/other\n",
+			},
+		}},
+		Env: map[string]string{},
+	})
+
+	if result.Method == MethodHomebrew {
+		t.Fatalf("method = %s, want non-homebrew when formula does not list current binary", result.Method)
 	}
 }
 
@@ -123,6 +146,26 @@ func TestDetectInstallMethodUnknownForUnownedPath(t *testing.T) {
 
 	if result.Method != MethodUnknown {
 		t.Fatalf("method = %s, want %s", result.Method, MethodUnknown)
+	}
+}
+
+func TestCleanPathResolvesSymlinksWhenPossible(t *testing.T) {
+	tmp := t.TempDir()
+	target := filepath.Join(tmp, "target")
+	link := filepath.Join(tmp, "link")
+	if err := os.WriteFile(target, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	expected, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := cleanPath(link); got != expected {
+		t.Fatalf("cleanPath(%q) = %q, want %q", link, got, expected)
 	}
 }
 
