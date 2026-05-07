@@ -9,6 +9,7 @@ KID="${MYMIND_KID:-}"
 SECRET="${MYMIND_SECRET:-}"
 YES="${MYMIND_YES:-}"
 INTERACTIVE=0
+CREDENTIALS_FROM_CONFIG=0
 if ( : </dev/tty >/dev/tty ) 2>/dev/null; then
   INTERACTIVE=1
 fi
@@ -28,6 +29,41 @@ need() {
 
 has() {
   command -v "$1" >/dev/null 2>&1
+}
+
+config_path() {
+  if [ -n "${MYMIND_CONFIG:-}" ]; then
+    printf '%s' "$MYMIND_CONFIG"
+  else
+    printf '%s/.config/mymind/config.toml' "$HOME"
+  fi
+}
+
+metadata_path() {
+  printf '%s/.config/mymind/install.json' "$HOME"
+}
+
+toml_value() {
+  key="$1"
+  file="$2"
+  sed -n "s/^[	 ]*${key}[	 ]*=[	 ]*\"\(.*\)\"[	 ]*$/\1/p" "$file" | sed -n '1p'
+}
+
+load_saved_credentials() {
+  file="$(config_path)"
+  [ -f "$file" ] || return 1
+  saved_kid="$(toml_value kid "$file")"
+  saved_secret="$(toml_value secret "$file")"
+  [ -n "$saved_kid" ] && [ -n "$saved_secret" ] || return 1
+  if [ -z "$KID" ]; then
+    KID="$saved_kid"
+  fi
+  if [ -z "$SECRET" ]; then
+    SECRET="$saved_secret"
+  fi
+  CREDENTIALS_FROM_CONFIG=1
+  say "Using saved mymind credentials from $file."
+  return 0
 }
 
 is_yes() {
@@ -74,6 +110,31 @@ append_unique() {
     ",,") printf '%s' "$item" ;;
     *) printf '%s,%s' "$list" "$item" ;;
   esac
+}
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+write_install_metadata() {
+  path="$(metadata_path)"
+  dir="$(dirname "$path")"
+  mkdir -p "$dir"
+  installed_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  cat >"$path" <<EOF
+{
+  "method": "curl",
+  "version": "$(json_escape "$VERSION")",
+  "repo": "$(json_escape "$REPO")",
+  "installed_at": "$(json_escape "$installed_at")",
+  "install_dir": "$(json_escape "$INSTALL_DIR")",
+  "mymind_path": "$(json_escape "${INSTALL_DIR}/mymind")",
+  "mymind_mcp_path": "$(json_escape "${INSTALL_DIR}/mymind-mcp")",
+  "platform": "$(json_escape "$platform")"
+}
+EOF
+  chmod 600 "$path" 2>/dev/null || true
+  say "Wrote install metadata: $path"
 }
 
 json_configure_mcp() {
@@ -147,6 +208,14 @@ detect_targets() {
 }
 
 print_target_menu() {
+  say ""
+  say "MCP setup"
+  say "  1) Update all detected clients"
+  say "  2) Choose clients"
+  say "  3) Skip"
+}
+
+print_client_menu() {
   detected="$1"
   say ""
   say "MCP clients detected:"
@@ -184,20 +253,36 @@ choice_to_targets() {
   printf '%s' "$out"
 }
 
+configure_codex_mcp() {
+  mcp_path="$1"
+  has codex || fail "codex command not found"
+  codex mcp remove mymind >/dev/null 2>&1 || true
+  codex mcp add mymind --env "MYMIND_KID=$KID" --env "MYMIND_SECRET=$SECRET" -- "$mcp_path"
+  say "Configured Codex MCP server."
+}
+
+configure_claude_code_mcp() {
+  mcp_path="$1"
+  has claude || fail "claude command not found"
+  claude mcp remove mymind >/dev/null 2>&1 || true
+  claude mcp add mymind "$mcp_path" -e "MYMIND_KID=$KID" -e "MYMIND_SECRET=$SECRET"
+  say "Configured Claude Code MCP server."
+}
+
+setup_needs_credentials() {
+  [ -n "$SETUP_MCP" ] && [ "$SETUP_MCP" != "none" ] && [ "$SETUP_MCP" != "no" ]
+}
+
 configure_target() {
   target="$1"
   mcp_path="$2"
   [ -n "$KID" ] && [ -n "$SECRET" ] || fail "MYMIND_KID and MYMIND_SECRET are required for MCP setup"
   case "$target" in
     codex)
-      has codex || fail "codex command not found"
-      codex mcp add mymind --env "MYMIND_KID=$KID" --env "MYMIND_SECRET=$SECRET" -- "$mcp_path"
-      say "Configured Codex MCP server."
+      configure_codex_mcp "$mcp_path"
       ;;
     claude-code)
-      has claude || fail "claude command not found"
-      claude mcp add mymind "$mcp_path" -e "MYMIND_KID=$KID" -e "MYMIND_SECRET=$SECRET"
-      say "Configured Claude Code MCP server."
+      configure_claude_code_mcp "$mcp_path"
       ;;
     claude-desktop)
       case "$(uname -s)" in
@@ -223,6 +308,8 @@ need tar
 need grep
 need sed
 
+load_saved_credentials || true
+
 os="$(uname -s)"
 arch="$(uname -m)"
 ext="tar.gz"
@@ -245,6 +332,7 @@ case "$os" in
 esac
 
 if [ "$VERSION" = "latest" ]; then
+  say "Resolving latest mymind release..."
   VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/${REPO}/releases/latest" | sed 's#.*/tag/##')"
 fi
 asset_version="${VERSION#v}"
@@ -256,8 +344,10 @@ mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT INT TERM
 
 say "Installing mymind ${VERSION} for ${platform}"
-curl -fL "${base_url}/${asset}" -o "${tmp}/${asset}"
-curl -fL "${base_url}/checksums.txt" -o "${tmp}/checksums.txt"
+say "Downloading mymind release archive..."
+curl -fsSL "${base_url}/${asset}" -o "${tmp}/${asset}"
+say "Downloading checksums..."
+curl -fsSL "${base_url}/checksums.txt" -o "${tmp}/checksums.txt"
 
 (cd "$tmp" && grep " ${asset}$" checksums.txt | $checksum_cmd) >/dev/null || fail "checksum verification failed"
 
@@ -289,34 +379,49 @@ fi
 say "Installed:"
 say "  ${INSTALL_DIR}/mymind"
 say "  ${INSTALL_DIR}/mymind-mcp"
+write_install_metadata
 
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
   *) say "Add ${INSTALL_DIR} to PATH before running mymind from a new shell." ;;
 esac
 
-if [ -z "$KID" ] && [ "$INTERACTIVE" = "1" ] && confirm "Save mymind credentials now? [y/N]" n; then
+detected_targets="$(detect_targets)"
+if [ "$SETUP_MCP" = "all" ]; then
+  SETUP_MCP="$detected_targets"
+elif [ -z "$SETUP_MCP" ] && [ -z "$detected_targets" ]; then
+  say "No MCP clients detected. Rerun with MYMIND_SETUP_MCP=codex,claude-code,cursor to configure one explicitly."
+elif [ -z "$SETUP_MCP" ] && is_yes; then
+  SETUP_MCP="$detected_targets"
+elif [ -z "$SETUP_MCP" ] && [ "$INTERACTIVE" = "1" ]; then
+  print_target_menu "$detected_targets"
+  printf 'Choose [1]: ' >/dev/tty
+  read setup_mode </dev/tty || setup_mode=""
+  case "$setup_mode" in
+    ""|1) SETUP_MCP="$detected_targets" ;;
+    2)
+      print_client_menu "$detected_targets"
+      printf 'Set up MCP for [a/n/1,2,3,4]: ' >/dev/tty
+      read setup_choice </dev/tty || setup_choice=""
+      SETUP_MCP="$(choice_to_targets "$setup_choice" "$detected_targets")"
+      ;;
+    3|n|N|none|no) SETUP_MCP="none" ;;
+    *) fail "unknown MCP setup choice: $setup_mode" ;;
+  esac
+fi
+
+if setup_needs_credentials && { [ -z "$KID" ] || [ -z "$SECRET" ]; } && [ "$INTERACTIVE" = "1" ] && confirm "Save mymind credentials now? [y/N]" n; then
   printf 'MYMIND_KID: ' >/dev/tty
   read KID </dev/tty || KID=""
   SECRET="$(read_secret 'MYMIND_SECRET: ')"
 fi
 
-if [ -n "$KID" ] && [ -n "$SECRET" ]; then
+if [ -n "$KID" ] && [ -n "$SECRET" ] && [ "$CREDENTIALS_FROM_CONFIG" != "1" ]; then
   "${INSTALL_DIR}/mymind" auth set-key "$KID" "$SECRET" >/dev/null
   say "Saved credentials to mymind config."
 fi
 
-detected_targets="$(detect_targets)"
-if [ -z "$SETUP_MCP" ] && [ "$INTERACTIVE" = "1" ]; then
-  print_target_menu "$detected_targets"
-  printf 'Set up MCP for [a/n/1,2,3,4]: ' >/dev/tty
-  read setup_choice </dev/tty || setup_choice=""
-  SETUP_MCP="$(choice_to_targets "$setup_choice" "$detected_targets")"
-elif [ "$SETUP_MCP" = "all" ]; then
-  SETUP_MCP="$detected_targets"
-fi
-
-if [ -n "$SETUP_MCP" ] && [ "$SETUP_MCP" != "none" ] && [ "$SETUP_MCP" != "no" ]; then
+if setup_needs_credentials; then
   old_ifs="$IFS"
   IFS=', '
   for target in $SETUP_MCP; do
@@ -324,6 +429,8 @@ if [ -n "$SETUP_MCP" ] && [ "$SETUP_MCP" != "none" ] && [ "$SETUP_MCP" != "no" ]
     configure_target "$target" "${INSTALL_DIR}/mymind-mcp"
   done
   IFS="$old_ifs"
+elif [ -z "$KID" ] || [ -z "$SECRET" ]; then
+  say "Credentials not saved. Set them later with: mymind auth set-key <kid> <base64-secret>"
 fi
 
 "${INSTALL_DIR}/mymind" version
