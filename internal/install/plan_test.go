@@ -1,0 +1,52 @@
+package install
+
+import "testing"
+
+func TestPlanHomebrewUpdate(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodHomebrew, MymindPath: "/opt/homebrew/bin/mymind"},
+	})
+	if plan.Method != MethodHomebrew {
+		t.Fatalf("method = %s", plan.Method)
+	}
+	if len(plan.Actions) != 2 {
+		t.Fatalf("actions = %#v, want 2 actions", plan.Actions)
+	}
+	if plan.Actions[0].Command != "brew upgrade nawwwal/whimsies/mymind" {
+		t.Fatalf("first command = %q", plan.Actions[0].Command)
+	}
+	if !plan.HasAction("repair-mcp") {
+		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	}
+}
+
+func TestPlanCurlUpdateIncludesMCPRepair(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodCurl, MymindPath: "/Users/me/.local/bin/mymind", MCPPath: "/Users/me/.local/bin/mymind-mcp"},
+		Latest:    "v1.3.5",
+	})
+	if plan.Method != MethodCurl {
+		t.Fatalf("method = %s", plan.Method)
+	}
+	if !plan.HasAction("replace-binaries") {
+		t.Fatalf("expected replace-binaries action in %#v", plan.Actions)
+	}
+	if !plan.HasAction("repair-mcp") {
+		t.Fatalf("expected repair-mcp action in %#v", plan.Actions)
+	}
+}
+
+func TestPlanUnknownInstallRefusesMutation(t *testing.T) {
+	plan := PlanUpdate(PlanOptions{
+		Detection: Detection{Method: MethodUnknown, MymindPath: "/tmp/mymind"},
+	})
+	if plan.CanMutate {
+		t.Fatalf("unknown install should not mutate")
+	}
+	if plan.Error == "" {
+		t.Fatalf("expected explanatory error")
+	}
+	if plan.Error != "unknown install method; refusing to overwrite /tmp/mymind" {
+		t.Fatalf("error = %q", plan.Error)
+	}
+}
