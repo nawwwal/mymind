@@ -13,23 +13,21 @@ import (
 func newUpdateCmd(flags *rootFlags) *cobra.Command {
 	var checkOnly bool
 	var repairMCP bool
-	var installMethod string
-	var currentPath string
-	var mcpPath string
 
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update mymind using the detected install method",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			detection := detectInstallForUpdate(currentPath)
-			if installMethod != "" {
-				detection.Method = install.Method(installMethod)
+			detection := detectInstallForUpdate(flags.currentPath)
+			if flags.installMethod != "" {
+				detection.Method = install.Method(flags.installMethod)
 			}
-			if currentPath != "" {
-				detection.MymindPath = currentPath
+			if flags.currentPath != "" {
+				detection.MymindPath = flags.currentPath
 			}
-			if mcpPath != "" {
-				detection.MCPPath = mcpPath
+			if flags.mcpPath != "" {
+				detection.MCPPath = flags.mcpPath
 			}
 
 			plan := install.PlanUpdate(install.PlanOptions{
@@ -54,12 +52,6 @@ func newUpdateCmd(flags *rootFlags) *cobra.Command {
 
 	cmd.Flags().BoolVar(&checkOnly, "check", false, "Check whether an update is available without changing files")
 	cmd.Flags().BoolVar(&repairMCP, "repair-mcp", false, "Repair MCP client config without updating binaries")
-	cmd.Flags().StringVar(&installMethod, "install-method", "", "Override detected install method for tests")
-	cmd.Flags().StringVar(&currentPath, "current-path", "", "Override current binary path for tests")
-	cmd.Flags().StringVar(&mcpPath, "mcp-path", "", "Override MCP binary path for tests")
-	_ = cmd.Flags().MarkHidden("install-method")
-	_ = cmd.Flags().MarkHidden("current-path")
-	_ = cmd.Flags().MarkHidden("mcp-path")
 
 	return cmd
 }
